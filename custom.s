@@ -17,24 +17,61 @@ start:
 
 
 realstart:
+	bl	backlightoff
 	bl	sleep
-	bl	backlight
-	b	realstart
+	bl	sleep
+	bl	sleep
+	bl	sleep
+	bl	sleep
+	mov	r0,0xaaaaaaa
+
+
+rloop:
+	bl	zero
+	bl	one
+	b	rloop
+
+zero:
+	stmia	sp!,{lr}
+	bl	backlighton
+	bl	sleep
+	bl	backlightoff
+	bl	sleep
+	ldmdb	sp!,{lr}
+	bx	lr
+
+one:
+	stmia	sp!,{lr}
+	bl	backlighton
+	bl	sleep
+	bl	sleep
+	bl	backlightoff
+	bl	sleep
+	ldmdb	sp!,{lr}
+	bx	lr
 
 sleep:
-	ldr	r4,COUNTER
+	ldr	r0,COUNTER
 loop:
-	subs	r4,#1
+	subs	r0,#1
 	bne	loop
 	bx	lr
 COUNTER:.word 0x2000000
 
-backlight:
+backlighton:
 	ldr	r0,GPT10_CLR
 	ldr	r1,[r0]
-	eor	r1,#1
+	orr	r1,#1
 	str	r1,[r0]
 	bx	lr
+
+backlightoff:
+	ldr	r0,GPT10_CLR
+	ldr	r1,[r0]
+	bic	r1,#1
+	str	r1,[r0]
+	bx	lr
+
 GPT10_CLR:.word 0x48086024 
 
 
