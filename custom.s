@@ -17,7 +17,10 @@ start:
 
 
 realstart:
-	ldr	r4,[pc,$(COUNTER-.-8)]
+	b	sleep
+
+sleep:
+	ldr	r4,COUNTER
 loop:
 	subs	r4,#1
 	bne	loop
@@ -25,7 +28,7 @@ loop:
 COUNTER:.word 0x2000000
 
 backlight:
-	ldr	r0,[pc,$(GPT10_CLR-.-8)]
+	ldr	r0,GPT10_CLR
 	ldr	r1,[r0]
 	eor	r1,#1
 	str	r1,[r0]
@@ -34,7 +37,7 @@ GPT10_CLR:.word 0x48086024
 
 
 reboot:
-	ldr	r0,[pc,$(PRCCTRL-.-8)]
+	ldr	r0,PRCCTRL
 	mov	r1,#4
 	str	r1,[r0]
 	b halt
