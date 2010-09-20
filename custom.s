@@ -17,14 +17,15 @@ start:
 
 
 realstart:
-	b	sleep
+	bl	sleep
+	b	backlight
 
 sleep:
 	ldr	r4,COUNTER
 loop:
 	subs	r4,#1
 	bne	loop
-	b	backlight
+	bx	lr
 COUNTER:.word 0x2000000
 
 backlight:
