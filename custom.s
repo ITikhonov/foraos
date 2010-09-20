@@ -18,13 +18,73 @@ start:
 
 realstart:
 	bl	backlightoff
-	bl	sleep
-	bl	sleep
-	bl	sleep
-	bl	sleep
-	bl	sleep
-	mov	r0,0xaaaaaaa
+	bl	break
 
+	ldr	r8,DUMMY
+	bl	show
+	mov	r8,#0
+	bl	show
+	b	halt
+DUMMY:	.word 0x0000aaaa
+
+show:
+	push	{lr}
+	bl	showone
+	bl	showone
+	bl	showone
+	bl	showone
+	bl	showone
+	bl	showone
+	bl	showone
+	bl	showone
+
+	bl	showone
+	bl	showone
+	bl	showone
+	bl	showone
+	bl	showone
+	bl	showone
+	bl	showone
+	bl	showone
+
+	bl	showone
+	bl	showone
+	bl	showone
+	bl	showone
+	bl	showone
+	bl	showone
+	bl	showone
+	bl	showone
+
+	bl	showone
+	bl	showone
+	bl	showone
+	bl	showone
+	bl	showone
+	bl	showone
+	bl	showone
+	bl	showone
+
+	bl	break
+	pop	{lr}
+	bx	lr
+
+showone:
+	push	{lr}
+	lsls	r8,#1
+	blcs	one
+	blcc	zero
+	pop	{lr}
+	bx	lr
+
+break:
+	push	{lr}
+	bl	sleep
+	bl	sleep
+	bl	sleep
+	bl	sleep
+	pop	{lr}
+	bx	lr
 
 rloop:
 	bl	zero
@@ -32,22 +92,22 @@ rloop:
 	b	rloop
 
 zero:
-	stmia	sp!,{lr}
+	push	{lr}
 	bl	backlighton
 	bl	sleep
 	bl	backlightoff
 	bl	sleep
-	ldmdb	sp!,{lr}
+	pop	{lr}
 	bx	lr
 
 one:
-	stmia	sp!,{lr}
+	push	{lr}
 	bl	backlighton
 	bl	sleep
 	bl	sleep
 	bl	backlightoff
 	bl	sleep
-	ldmdb	sp!,{lr}
+	pop	{lr}
 	bx	lr
 
 sleep:
@@ -56,7 +116,7 @@ loop:
 	subs	r0,#1
 	bne	loop
 	bx	lr
-COUNTER:.word 0x2000000
+COUNTER:.word 0x8000000
 
 backlighton:
 	ldr	r0,GPT10_CLR
