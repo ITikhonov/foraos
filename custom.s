@@ -18,7 +18,8 @@ start:
 
 realstart:
 	bl	sleep
-	b	backlight
+	bl	backlight
+	b	realstart
 
 sleep:
 	ldr	r4,COUNTER
@@ -33,7 +34,7 @@ backlight:
 	ldr	r1,[r0]
 	eor	r1,#1
 	str	r1,[r0]
-	b	realstart
+	bx	lr
 GPT10_CLR:.word 0x48086024 
 
 
