@@ -20,12 +20,19 @@ realstart:
 	bl	backlightoff
 	bl	break
 
-	ldr	r8,DUMMY
+	ldr	r8,DISPC_GFX_BA0
+	ldr	r8,[r8]
+	mvn	r0,#0
+	str	r0,[r8]
+
+	ldr	r8,DISPC_GFX_ATTRIBUTES
+	ldr	r8,[r8]
 	bl	show
-	mov	r8,#0
-	bl	show
-	b	halt
-DUMMY:	.word 0x0000aaaa
+	b	realstart
+DISPC_CONTROL:	.word 0x48050440
+DISPC_VID1_BA0: .word 0x480504bc
+DISPC_GFX_BA0:	.word 0x48050480
+DISPC_GFX_ATTRIBUTES:	.word 0x480504A0
 
 show:
 	push	{lr}
