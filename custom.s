@@ -17,22 +17,43 @@ start:
 
 
 realstart:
-	bl	backlightoff
-	bl	break
-
-	ldr	r8,DISPC_GFX_BA0
-	ldr	r8,[r8]
-	mvn	r0,#0
-	str	r0,[r8]
-
-	ldr	r8,DISPC_GFX_ATTRIBUTES
-	ldr	r8,[r8]
-	bl	show
-	b	realstart
-DISPC_CONTROL:	.word 0x48050440
-DISPC_VID1_BA0: .word 0x480504bc
+	bl	wholescreen
+	b	halt
 DISPC_GFX_BA0:	.word 0x48050480
-DISPC_GFX_ATTRIBUTES:	.word 0x480504A0
+
+wholescreen:
+	push	{lr}
+	ldr	r9,DISPC_GFX_BA0
+	ldr	r9,[r9]
+	mov	r10,#0
+.wh.loop:
+	bl	row
+	add	r10,#1
+	cmp	r10,#600
+	bne	.wh.loop
+	pop	{lr}
+	bx	lr
+
+row:
+	push	{lr}
+	mov	r11,#0
+	
+.row.loop:
+	bl	pixel
+
+	add	r11,#1
+	add	r9,#4
+	cmp	r11,#800
+	bne	.row.loop
+	pop	{lr}
+	bx	lr
+
+
+pixel:
+	mvn	r0,#0
+	str	r0,[r9]
+	bx	lr
+
 
 show:
 	push	{lr}
@@ -76,7 +97,7 @@ show:
 	pop	{lr}
 	bx	lr
 
-showone:
+showoneb:
 	push	{lr}
 	lsls	r8,#1
 	blcs	one
@@ -84,7 +105,7 @@ showone:
 	pop	{lr}
 	bx	lr
 
-break:
+breakb:
 	push	{lr}
 	bl	sleep
 	bl	sleep
@@ -98,7 +119,7 @@ rloop:
 	bl	one
 	b	rloop
 
-zero:
+zerob:
 	push	{lr}
 	bl	backlighton
 	bl	sleep
@@ -107,7 +128,7 @@ zero:
 	pop	{lr}
 	bx	lr
 
-one:
+oneb:
 	push	{lr}
 	bl	backlighton
 	bl	sleep
