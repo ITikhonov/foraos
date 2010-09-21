@@ -48,11 +48,32 @@ row:
 	pop	{lr}
 	bx	lr
 
+MB_ONE_X:	.word	0xff
+MB_ONE_Y:	.word	0xff
+
+# x in r11, y in r10
+falloff:
+	ldr	r2,MB_ONE_X
+	sub	r2,r11
+	mul	r0,r2,r2
+
+	ldr	r2,MB_ONE_Y
+	sub	r2,r10
+	mla	r0,r2,r2,r0
+	bx	lr
 
 pixel:
-	mvn	r0,#0
+	push	{lr}
+
+	bl	falloff
+	cmp	r0,#30
+	mvnls	r0,#0
+	movhi	r0,#0
 	str	r0,[r9]
+
+	pop	{lr}
 	bx	lr
+
 
 
 show:
