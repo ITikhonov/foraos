@@ -17,21 +17,48 @@ start:
 
 
 realstart:
+	bl	vauxinit
 	bl	spiinit
-	mov	r0,#0; bl dot
+	mov	r0,#0;
+	push	{r0}
+	bl dot
+
 .rs.loop:
 	bl	spiwrite
+	bl	spiread
+
+	pop	{r1}
+	add	r1,#1
+	push	{r1}
+	bl	dumpall
+
 	mov	r0,#4; bl dot
 
-	push {r0,r1}
-	bl dumpall
-	pop {r0,r1}
-
-	bl	spiread
-	mov	r0,#6; bl dot
-	b	halt
 	b	.rs.loop
 DISPC_GFX_BA0:	.word 0x48050480
+
+vauxinit:
+	ldr	r0,GPIO54MUX
+	ldr	r1,[r0]
+	mov	r1,#0b100
+	str	r1,[r0]
+
+
+	ldr	r0,GPIO_OE2
+	ldr	r1,[r0]
+	bic	r1,#1<<22
+	str	r1,[r0]
+
+	ldr	r0,GPIO_CLROUT2
+	ldr	r1,[r0]
+	mov	r1,#1<<22
+	str	r1,[r0]
+
+	bx	lr
+GPIO54MUX:.word 0x480020B4 
+GPIO_OE2:.word 0x49050034 
+GPIO_CLROUT2:.word 0x49050090 
+ 
 
 dot:
 	ldr	r1,DISPC_GFX_BA0
@@ -204,6 +231,8 @@ PRCCTRL: .word 0x48307250
 
 dumpall:
 	push {lr}
+	push {r1}
+	push {r0}
 	mov r9,#800
 
 	ldr r1,PRCM.CM_FCLKEN1_CORE;ldr r1,[r1];mov r0,r9;bl dump;add r9,#800
@@ -216,8 +245,22 @@ dumpall:
 	ldr r1,MCSPI_CH0CTRL;ldr r1,[r1];mov r0,r9;bl dump;add r9,#800
 	ldr r1,MCSPI_CH0CONF;ldr r1,[r1];mov r0,r9;bl dump;add r9,#800
 	ldr r1,MCSPI_CH0STAT;ldr r1,[r1];mov r0,r9;bl dump;add r9,#800
+	add r9,#800
+	pop {r0}
+	mov r1,r0;mov r0,r9;bl dump;add r9,#800
+	pop {r1}
+	mov r0,r9;bl dump;add r9,#800
+	ldr r1,PADCONF_CLK;ldr r1,[r1];mov r0,r9;bl dump;add r9,#800
+	ldr r1,PADCONF_SOMI;ldr r1,[r1];mov r0,r9;bl dump;add r9,#800
+
 
 	pop {pc}
+MCSPI_SYST:.word 0x48098024
+PADCONF_CLK:.word 0x480021C8   /* 00010111 00000000 00010111 00000000 */
+                               /*       simo                clk       */
+PADCONF_SOMI:.word 0x480021CC  /* 00010110 00001000 00010111 00000000 */
+                               /*       somi                cs0       */
+
 
 spiinit:
 	push {lr}
@@ -284,9 +327,10 @@ spiwrite:
 	#MCSPI_CHxCONF =0x0011 24D3 ???
 	ldr r0,MCSPI_CH0CONF
 	mov r1,#0
-	orr r1,#5<<2  /* 32 divider 1.5Mhz */
-	orr r1,#7<<7  /* 8-bit word length */
-	orr r1,#2<<12 /* transmit only */
+	orr r1,#9<<2  /* 32 divider 1.5Mhz */
+	orr r1,#1<<6  /* EPOL */
+	orr r1,#31<<7  /* 8-bit word length */
+	#orr r1,#2<<12 /* transmit only */
 	orr r1,#1<<16 /* no transmission on Slave Output */
 	orr r1,#1<<20 /* Force */
 	str r1,[r0]
@@ -309,10 +353,9 @@ spiwrite:
 	beq .tx.loop
 
 	#MCSPI_CH0CTRL =0
-	ldr r0,MCSPI_CH0CTRL
-	mov r1,#0
-	str r1,[r0]
-
+	#ldr r0,MCSPI_CH0CTRL
+	#mov r1,#0
+	#str r1,[r0]
 
 	pop {pc}
 	
@@ -323,35 +366,37 @@ MCSPI_CH0STAT:.word 0x48098030
 MCSPI_RX0:.word 0x4809803C 
 
 spiread:
-	ldr r0,MCSPI_CH0STAT
-	ldr r1,[r0]
-	tst r1,#1
-	beq .r.skip
+	push {lr}
 
-	ldr r0,MCSPI_RX0
-	ldr r1,[r0]
+	#ldr r0,MCSPI_CH0STAT
+	#ldr r1,[r0]
+	#tst r1,#1
+	#beq .r.skip
+
+	#ldr r0,MCSPI_RX0
+	#ldr r1,[r0]
+
 
 .r.skip:
 	#MCSPI_CHxCONF =0x0011 24D3 ???
-	ldr r0,MCSPI_CH0CONF
-	mov r1,#0
-	orr r1,#5<<2  /* 32 divider 1.5Mhz */
-	orr r1,#11<<5  /* 12-bit word length */
-	orr r1,#1<<12 /* receive only */
-	orr r1,#1<<17 /* no transmission on dpe1 */
-	orr r1,#1<<18 /* receive on dpe1 */
-	orr r1,#1<<20 /* Force */
-	str r1,[r0]
+	#ldr r0,MCSPI_CH0CONF
+	#mov r1,#0
+	#orr r1,#9<<2  /* 32 divider 1.5Mhz */
+	#orr r1,#1<<6  /* EPOL */
+	#orr r1,#7<<7  /* 8-bit word length */
+	#orr r1,#1<<12 /* receive only */
+	#orr r1,#1<<16 /* no transmission on SOMI */
+	#orr r1,#1<<20 /* Force */
+	#str r1,[r0]
 
 	#MCSPI_CH0CTRL =1
-	ldr r0,MCSPI_CH0CTRL
-	mov r1,#0
-	str r1,[r0]
+	#ldr r0,MCSPI_CH0CTRL
+	#mov r1,#0
+	#str r1,[r0]
 
-	#MCSPI_CH0CTRL =0
-	ldr r0,MCSPI_CH0CTRL
-	mov r1,#0
-	str r1,[r0]
+	#ldr r0,MCSPI_TX0
+	#mov r1,#0
+	#str r1,[r0]
 
 	#poll MCSPI_CHxSTAT[1] RXS =1
 	ldr r0,MCSPI_CH0STAT
@@ -361,9 +406,15 @@ spiread:
 	beq .rx.loop
 
 	ldr r1,MCSPI_RX0
-	ldr r0,[r1]
+	ldr r9,[r1]
 
-	bx lr
+	#MCSPI_CH0CTRL =0
+	#ldr r0,MCSPI_CH0CTRL
+	#mov r1,#0
+	#str r1,[r0]
+
+	mov r0,r9
+	pop {pc}
 
 # ---------------------------
 halt:	b halt
