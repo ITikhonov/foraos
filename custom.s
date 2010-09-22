@@ -17,9 +17,103 @@ start:
 
 
 realstart:
-	bl	wholescreen
+	bl	spiinit
+	mov	r0,#0; bl dot
+.rs.loop:
+	bl	spiwrite
+	mov	r0,#4; bl dot
+
+	push {r0,r1}
+	bl dumpall
+	pop {r0,r1}
+
+	bl	spiread
+	mov	r0,#6; bl dot
 	b	halt
+	b	.rs.loop
 DISPC_GFX_BA0:	.word 0x48050480
+
+dot:
+	ldr	r1,DISPC_GFX_BA0
+	ldr	r1,[r1]
+	add	r1,r0,lsl #4
+	mvn	r0,#0
+	str	r0,[r1];add	r1,#4
+	str	r0,[r1];add	r1,#4
+	str	r0,[r1];add	r1,#0xc70; add r1,#8
+
+	str	r0,[r1];add	r1,#4
+	str	r0,[r1];add	r1,#4
+	str	r0,[r1];add	r1,#0xc70; add r1,#8
+
+	str	r0,[r1];add	r1,#4
+	str	r0,[r1];add	r1,#4
+	str	r0,[r1];add	r1,#0xc70; add r1,#8
+
+	bx	lr
+
+line:
+	ldr	r1,DISPC_GFX_BA0
+	ldr	r1,[r1]
+	add	r1,r0,lsl #4
+	mvn	r0,#0
+	str	r0,[r1];add	r1,#4
+	str	r0,[r1];add	r1,#4
+	str	r0,[r1];add	r1,#0xc70; add r1,#8
+
+	mov	r0,#0
+	str	r0,[r1];add	r1,#4
+	str	r0,[r1];add	r1,#4
+	str	r0,[r1];add	r1,#0xc70; add r1,#8
+
+	str	r0,[r1];add	r1,#4
+	str	r0,[r1];add	r1,#4
+	str	r0,[r1];add	r1,#0xc70; add r1,#8
+
+	bx	lr
+
+
+dump:
+	push	{r8,r9,lr}
+	mov	r8,r0
+	mov	r9,r1
+
+	lsls	r9,#1; mov r0,r8; blcs dot; blcc line; add r8,#1
+	lsls	r9,#1; mov r0,r8; blcs dot; blcc line; add r8,#1
+	lsls	r9,#1; mov r0,r8; blcs dot; blcc line; add r8,#1
+	lsls	r9,#1; mov r0,r8; blcs dot; blcc line; add r8,#1
+	lsls	r9,#1; mov r0,r8; blcs dot; blcc line; add r8,#1
+	lsls	r9,#1; mov r0,r8; blcs dot; blcc line; add r8,#1
+	lsls	r9,#1; mov r0,r8; blcs dot; blcc line; add r8,#1
+	lsls	r9,#1; mov r0,r8; blcs dot; blcc line; add r8,#2
+
+	lsls	r9,#1; mov r0,r8; blcs dot; blcc line; add r8,#1
+	lsls	r9,#1; mov r0,r8; blcs dot; blcc line; add r8,#1
+	lsls	r9,#1; mov r0,r8; blcs dot; blcc line; add r8,#1
+	lsls	r9,#1; mov r0,r8; blcs dot; blcc line; add r8,#1
+	lsls	r9,#1; mov r0,r8; blcs dot; blcc line; add r8,#1
+	lsls	r9,#1; mov r0,r8; blcs dot; blcc line; add r8,#1
+	lsls	r9,#1; mov r0,r8; blcs dot; blcc line; add r8,#1
+	lsls	r9,#1; mov r0,r8; blcs dot; blcc line; add r8,#2
+
+	lsls	r9,#1; mov r0,r8; blcs dot; blcc line; add r8,#1
+	lsls	r9,#1; mov r0,r8; blcs dot; blcc line; add r8,#1
+	lsls	r9,#1; mov r0,r8; blcs dot; blcc line; add r8,#1
+	lsls	r9,#1; mov r0,r8; blcs dot; blcc line; add r8,#1
+	lsls	r9,#1; mov r0,r8; blcs dot; blcc line; add r8,#1
+	lsls	r9,#1; mov r0,r8; blcs dot; blcc line; add r8,#1
+	lsls	r9,#1; mov r0,r8; blcs dot; blcc line; add r8,#1
+	lsls	r9,#1; mov r0,r8; blcs dot; blcc line; add r8,#2
+
+	lsls	r9,#1; mov r0,r8; blcs dot; blcc line; add r8,#1
+	lsls	r9,#1; mov r0,r8; blcs dot; blcc line; add r8,#1
+	lsls	r9,#1; mov r0,r8; blcs dot; blcc line; add r8,#1
+	lsls	r9,#1; mov r0,r8; blcs dot; blcc line; add r8,#1
+	lsls	r9,#1; mov r0,r8; blcs dot; blcc line; add r8,#1
+	lsls	r9,#1; mov r0,r8; blcs dot; blcc line; add r8,#1
+	lsls	r9,#1; mov r0,r8; blcs dot; blcc line; add r8,#1
+	lsls	r9,#1; mov r0,r8; blcs dot; blcc line;
+	pop	{r8,r9,pc}
 
 wholescreen:
 	push	{lr}
@@ -108,11 +202,30 @@ PRCCTRL: .word 0x48307250
 
 # --------------------------------------
 
+dumpall:
+	push {lr}
+	mov r9,#800
+
+	ldr r1,PRCM.CM_FCLKEN1_CORE;ldr r1,[r1];mov r0,r9;bl dump;add r9,#800
+	ldr r1,PRCM.CM_ICLKEN1_CORE;ldr r1,[r1];mov r0,r9;bl dump;add r9,#800
+	add r9,#800
+	ldr r1,MCSPI_SYSCONFIG;ldr r1,[r1];mov r0,r9;bl dump;add r9,#800
+	ldr r1,MCSPI_SYSSTATUS;ldr r1,[r1];mov r0,r9;bl dump;add r9,#800
+	ldr r1,MCSPI_MODULCTRL;ldr r1,[r1];mov r0,r9;bl dump;add r9,#800
+	add r9,#800
+	ldr r1,MCSPI_CH0CTRL;ldr r1,[r1];mov r0,r9;bl dump;add r9,#800
+	ldr r1,MCSPI_CH0CONF;ldr r1,[r1];mov r0,r9;bl dump;add r9,#800
+	ldr r1,MCSPI_CH0STAT;ldr r1,[r1];mov r0,r9;bl dump;add r9,#800
+
+	pop {pc}
+
 spiinit:
+	push {lr}
+
 	#PRCM.CM_FCLKEN1_CORE[18???]=1
 	ldr r0,PRCM.CM_FCLKEN1_CORE
 	ldr r1,[r0]
-	orr r1,#0x40000
+	orr r1,#1<<18
 	str r1,[r0]
 
 	#PRCM.CM_ICLKEN1_CORE[18???]=1
@@ -150,7 +263,7 @@ spiinit:
 	mvn r1,#0
 	str r1,[r0]
 
-	bx lr
+	pop {pc}
 	
 PRCM.CM_FCLKEN1_CORE:.word 0x48004A00
 PRCM.CM_ICLKEN1_CORE:.word 0x48004A10
@@ -161,18 +274,20 @@ MCSPI_IRQENABLE:.word 0x4809801C
 MCSPI_IRQSTATUS:.word 0x48098018
 
 spiwrite:
+	push {lr}
+
 	#MCSPI_MODULCTRL =1
 	ldr r0,MCSPI_MODULCTRL
-	mvn r1,#1
+	mov r1,#1
 	str r1,[r0]
 
 	#MCSPI_CHxCONF =0x0011 24D3 ???
 	ldr r0,MCSPI_CH0CONF
 	mov r1,#0
 	orr r1,#5<<2  /* 32 divider 1.5Mhz */
-	orr r1,#7<<5  /* 8-bit word length */
+	orr r1,#7<<7  /* 8-bit word length */
 	orr r1,#2<<12 /* transmit only */
-	orr r1,#1<<17 /* no transmission on dpe1 */
+	orr r1,#1<<16 /* no transmission on Slave Output */
 	orr r1,#1<<20 /* Force */
 	str r1,[r0]
 
@@ -198,7 +313,8 @@ spiwrite:
 	mov r1,#0
 	str r1,[r0]
 
-	bx lr
+
+	pop {pc}
 	
 MCSPI_MODULCTRL:.word 0x48098028
 MCSPI_CH0CONF:.word 0x4809802C 
