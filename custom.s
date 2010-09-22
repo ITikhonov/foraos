@@ -74,91 +74,6 @@ pixel:
 	pop	{lr}
 	bx	lr
 
-
-
-show:
-	push	{lr}
-	bl	showone
-	bl	showone
-	bl	showone
-	bl	showone
-	bl	showone
-	bl	showone
-	bl	showone
-	bl	showone
-
-	bl	showone
-	bl	showone
-	bl	showone
-	bl	showone
-	bl	showone
-	bl	showone
-	bl	showone
-	bl	showone
-
-	bl	showone
-	bl	showone
-	bl	showone
-	bl	showone
-	bl	showone
-	bl	showone
-	bl	showone
-	bl	showone
-
-	bl	showone
-	bl	showone
-	bl	showone
-	bl	showone
-	bl	showone
-	bl	showone
-	bl	showone
-	bl	showone
-
-	bl	break
-	pop	{lr}
-	bx	lr
-
-showoneb:
-	push	{lr}
-	lsls	r8,#1
-	blcs	one
-	blcc	zero
-	pop	{lr}
-	bx	lr
-
-breakb:
-	push	{lr}
-	bl	sleep
-	bl	sleep
-	bl	sleep
-	bl	sleep
-	pop	{lr}
-	bx	lr
-
-rloop:
-	bl	zero
-	bl	one
-	b	rloop
-
-zerob:
-	push	{lr}
-	bl	backlighton
-	bl	sleep
-	bl	backlightoff
-	bl	sleep
-	pop	{lr}
-	bx	lr
-
-oneb:
-	push	{lr}
-	bl	backlighton
-	bl	sleep
-	bl	sleep
-	bl	backlightoff
-	bl	sleep
-	pop	{lr}
-	bx	lr
-
 sleep:
 	ldr	r0,COUNTER
 loop:
@@ -191,7 +106,151 @@ reboot:
 	b halt
 PRCCTRL: .word 0x48307250
 
+# --------------------------------------
 
+spiinit:
+	#PRCM.CM_FCLKEN1_CORE[18???]=1
+	ldr r0,PRCM.CM_FCLKEN1_CORE
+	ldr r1,[r0]
+	orr r1,#0x40000
+	str r1,[r0]
+
+	#PRCM.CM_ICLKEN1_CORE[18???]=1
+	ldr r0,PRCM.CM_ICLKEN1_CORE
+	ldr r1,[r0]
+	orr r1,#0x40000
+	str r1,[r0]
+
+	#MCSPI_SYSCONFIG[1]=1 // reset
+	ldr r0,MCSPI_SYSCONFIG
+	ldr r1,[r0]
+	orr r1,#0x2
+	str r1,[r0]
+
+	#read till SPIm.MCSPI_SYSSTATUS[0]=1
+	ldr r0,MCSPI_SYSSTATUS
+
+.spiinit.wait:
+	ldr r1,[r0]
+	tst r1,#1
+	beq .spiinit.wait
+
+	#MCSPI_CH0CTRL =0
+	ldr r0,MCSPI_CH0CTRL
+	mov r1,#0
+	str r1,[r0]
+	
+	#MCSPI_IRQENABLE =0
+	ldr r0,MCSPI_IRQENABLE
+	mov r1,#0
+	str r1,[r0]
+	
+	#MCSPI_IRQSTATUS =0x0001 777F
+	ldr r0,MCSPI_IRQSTATUS
+	mvn r1,#0
+	str r1,[r0]
+
+	bx lr
+	
+PRCM.CM_FCLKEN1_CORE:.word 0x48004A00
+PRCM.CM_ICLKEN1_CORE:.word 0x48004A10
+MCSPI_SYSCONFIG:.word 0x48098010
+MCSPI_SYSSTATUS:.word 0x48098014
+MCSPI_CH0CTRL:.word 0x48098034 
+MCSPI_IRQENABLE:.word 0x4809801C
+MCSPI_IRQSTATUS:.word 0x48098018
+
+spiwrite:
+	#MCSPI_MODULCTRL =1
+	ldr r0,MCSPI_MODULCTRL
+	mvn r1,#1
+	str r1,[r0]
+
+	#MCSPI_CHxCONF =0x0011 24D3 ???
+	ldr r0,MCSPI_CH0CONF
+	mov r1,#0
+	orr r1,#5<<2  /* 32 divider 1.5Mhz */
+	orr r1,#7<<5  /* 8-bit word length */
+	orr r1,#2<<12 /* transmit only */
+	orr r1,#1<<17 /* no transmission on dpe1 */
+	orr r1,#1<<20 /* Force */
+	str r1,[r0]
+
+	#MCSPI_CH0CTRL =1
+	ldr r0,MCSPI_CH0CTRL
+	mov r1,#1
+	str r1,[r0]
+
+	#MCSPI_TXx =byte
+	ldr r0,MCSPI_TX0
+	mov r1,#0b10010000
+	str r1,[r0]
+
+	#poll MCSPI_CHxSTAT[1] TXS =1
+	ldr r0,MCSPI_CH0STAT
+.tx.loop:
+	ldr r1,[r0]
+	tst r1,#2
+	beq .tx.loop
+
+	#MCSPI_CH0CTRL =0
+	ldr r0,MCSPI_CH0CTRL
+	mov r1,#0
+	str r1,[r0]
+
+	bx lr
+	
+MCSPI_MODULCTRL:.word 0x48098028
+MCSPI_CH0CONF:.word 0x4809802C 
+MCSPI_TX0:.word 0x48098038 
+MCSPI_CH0STAT:.word 0x48098030 
+MCSPI_RX0:.word 0x4809803C 
+
+spiread:
+	ldr r0,MCSPI_CH0STAT
+	ldr r1,[r0]
+	tst r1,#1
+	beq .r.skip
+
+	ldr r0,MCSPI_RX0
+	ldr r1,[r0]
+
+.r.skip:
+	#MCSPI_CHxCONF =0x0011 24D3 ???
+	ldr r0,MCSPI_CH0CONF
+	mov r1,#0
+	orr r1,#5<<2  /* 32 divider 1.5Mhz */
+	orr r1,#11<<5  /* 12-bit word length */
+	orr r1,#1<<12 /* receive only */
+	orr r1,#1<<17 /* no transmission on dpe1 */
+	orr r1,#1<<18 /* receive on dpe1 */
+	orr r1,#1<<20 /* Force */
+	str r1,[r0]
+
+	#MCSPI_CH0CTRL =1
+	ldr r0,MCSPI_CH0CTRL
+	mov r1,#0
+	str r1,[r0]
+
+	#MCSPI_CH0CTRL =0
+	ldr r0,MCSPI_CH0CTRL
+	mov r1,#0
+	str r1,[r0]
+
+	#poll MCSPI_CHxSTAT[1] RXS =1
+	ldr r0,MCSPI_CH0STAT
+.rx.loop:
+	ldr r1,[r0]
+	tst r1,#1
+	beq .rx.loop
+
+	ldr r1,MCSPI_RX0
+	ldr r0,[r1]
+
+	bx lr
+
+# ---------------------------
 halt:	b halt
 
 end:
+
