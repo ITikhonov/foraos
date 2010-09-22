@@ -19,7 +19,7 @@ start:
 realstart:
 	bl	vauxinit
 	bl	spiinit
-	mov	r0,#0;
+	mov	r0,#0
 	push	{r0}
 	bl dot
 
