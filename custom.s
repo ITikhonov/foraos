@@ -27,6 +27,12 @@ realstart:
 	ldr	r1,[r1]
 	str	r1,TS_PNTR
 
+	ldr	r0,DISPC_GFX_BA0
+	ldr	r0,[r0]
+	mov	r1,#0
+	bl	char
+	b	halt
+
 .rs.loop:
 	bl	touchscreen
 	bl	drawtouch
@@ -37,6 +43,7 @@ realstart:
 	bl	dumpall
 
 	mov	r0,#4; bl dot
+
 
 	b	.rs.loop
 DISPC_GFX_BA0:	.word 0x48050480
@@ -504,8 +511,47 @@ spiread:
 	mov r0,r9
 	pop {pc}
 
+char:
+	push {lr}
+	adr r2,FONT
+	#add r2,r1,lsl #4
+
+	bl tworows; bl tworows; bl tworows; bl tworows
+	bl tworows; bl tworows; bl tworows; bl tworows
+	bl tworows; bl tworows; bl tworows; bl tworows
+	bl tworows; bl tworows; bl tworows; bl tworows
+
+	pop {pc}
+
+tworows:
+	push {lr}
+	ldr r1,[r2]
+	add r2,#4
+	bl charpixel; bl charpixel; bl charpixel; bl charpixel
+	bl charpixel; bl charpixel; bl charpixel; bl charpixel
+	bl charpixel; bl charpixel; bl charpixel; bl charpixel
+	bl charpixel; bl charpixel; bl charpixel; bl charpixel
+	add r0,#(800*4-16*4)
+	bl charpixel; bl charpixel; bl charpixel; bl charpixel
+	bl charpixel; bl charpixel; bl charpixel; bl charpixel
+	bl charpixel; bl charpixel; bl charpixel; bl charpixel
+	bl charpixel; bl charpixel; bl charpixel; bl charpixel
+	add r0,#(800*4-16*4)
+	pop {pc}
+
+charpixel:
+	lsls r1,#1
+	mvncs r3,#0
+	movcc r3,#0
+	str r3,[r0]
+	add r0,#4
+	bx lr
+
+
 # ---------------------------
 halt:	b halt
+
+FONT: .incbin "font.bin"
 
 end:
 

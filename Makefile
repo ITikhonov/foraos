@@ -3,7 +3,7 @@ ASFLAGS=-mfpu=neon
 
 all: custom.bin
 
-custom.bin: custom
+custom.bin: custom font.bin
 	bin/objcopy -O binary custom custom.bin
 
 custom: custom.o
@@ -22,4 +22,5 @@ wayback:
 	cp 1/Initramfs-2.6.27.10-omap1.cpio.gz /mnt/initramfs.cpio.gz
 	sudo umount /mnt
 
-
+font.bin: font.gray refont
+	./refont
