@@ -64,18 +64,42 @@ TS_PNTR:.word 0
 
 drawtouch:
 	push {lr}
-	ldr r0,TS_XLST
+
 	# x*800/4096
+	ldr r0,TS_XLST
 	mov r1,#800
+	add r1,#45
 	mul r0,r1,r0
 	lsr r0,#12
+	subs r0,#20
+	movmi r0,#0
+	cmp r0,#800
+	movpl r0,#800
+	subpl r0,#1
 
+	# y*600/4096
+	ldr r2,TS_YLST
+	mov r1,#480
+	add r1,#65
+	mul r2,r1,r2
+	lsr r2,#12
+	subs r2,#35
+	movmi r2,#0
+	cmp r2,#480
+	movpl r2,#480
+	subpl r2,#1
+	
 	str r0,TS_XMIN
+	str r2,TS_YMIN
+
+	mov	r1,#(800*4)
+	mul	r2,r1,r2
 
 	ldr	r1,DISPC_GFX_BA0
 	ldr	r1,[r1]
-	add	r1,#0xea000
-	add	r1,#0x600
+
+	add	r1,r2
+
 	add	r1,r0,lsl #2
 	mvn	r0,#0
 	str	r0,[r1]
