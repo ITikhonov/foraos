@@ -1,4 +1,5 @@
 AS=bin/as
+ASFLAGS=-mfpu=neon
 
 all: custom.bin
 

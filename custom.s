@@ -22,9 +22,14 @@ realstart:
 	mov	r0,#0
 	push	{r0}
 	bl dot
+	
+	ldr	r1,DISPC_GFX_BA0
+	ldr	r1,[r1]
+	str	r1,TS_PNTR
 
 .rs.loop:
 	bl	touchscreen
+	bl	drawtouch
 
 	pop	{r1}
 	add	r1,#1
@@ -40,20 +45,48 @@ touchscreen:
 	push {lr}
 	mov	r0,#0b10010000
 	bl spiwrite; bl spiread
+	lsr r0,#11
 	str r0,TS_YLST
 
 	mov	r0,#0b11010000
 	bl spiwrite; bl spiread
+	lsr r0,#11
 	str r0,TS_XLST
 
 	pop {pc}
-
 TS_XMIN:.word 0
 TS_XMAX:.word 0
 TS_YMIN:.word 0
 TS_YMAX:.word 0
 TS_XLST:.word 0
 TS_YLST:.word 0
+TS_PNTR:.word 0
+
+drawtouch:
+	push {lr}
+	ldr r0,TS_XLST
+	# x*800/4096
+	mov r1,#800
+	mul r0,r1,r0
+	lsr r0,#12
+
+	str r0,TS_XMIN
+
+	ldr	r1,DISPC_GFX_BA0
+	ldr	r1,[r1]
+	add	r1,#0xea000
+	add	r1,#0x600
+	add	r1,r0,lsl #2
+	mvn	r0,#0
+	str	r0,[r1]
+
+
+	ldr	r0,TS_PNTR
+	mov	r3,#0
+	str	r3,[r0]
+	str	r1,TS_PNTR
+
+	pop {pc}
 
 vauxinit:
 	ldr	r0,GPIO54MUX
