@@ -24,8 +24,7 @@ realstart:
 	bl dot
 
 .rs.loop:
-	bl	spiwrite
-	bl	spiread
+	bl	touchscreen
 
 	pop	{r1}
 	add	r1,#1
@@ -36,6 +35,25 @@ realstart:
 
 	b	.rs.loop
 DISPC_GFX_BA0:	.word 0x48050480
+
+touchscreen:
+	push {lr}
+	mov	r0,#0b10010000
+	bl spiwrite; bl spiread
+	str r0,TS_YLST
+
+	mov	r0,#0b11010000
+	bl spiwrite; bl spiread
+	str r0,TS_XLST
+
+	pop {pc}
+
+TS_XMIN:.word 0
+TS_XMAX:.word 0
+TS_YMIN:.word 0
+TS_YMAX:.word 0
+TS_XLST:.word 0
+TS_YLST:.word 0
 
 vauxinit:
 	ldr	r0,GPIO54MUX
@@ -252,7 +270,15 @@ dumpall:
 	mov r0,r9;bl dump;add r9,#800
 	ldr r1,PADCONF_CLK;ldr r1,[r1];mov r0,r9;bl dump;add r9,#800
 	ldr r1,PADCONF_SOMI;ldr r1,[r1];mov r0,r9;bl dump;add r9,#800
-
+	add r9,#800
+	ldr r1,TS_XLST;mov r0,r9;bl dump;add r9,#800
+	ldr r1,TS_YLST;mov r0,r9;bl dump;add r9,#800
+	add r9,#800
+	ldr r1,TS_XMIN;mov r0,r9;bl dump;add r9,#800
+	ldr r1,TS_YMIN;mov r0,r9;bl dump;add r9,#800
+	add r9,#800
+	ldr r1,TS_XMAX;mov r0,r9;bl dump;add r9,#800
+	ldr r1,TS_YMAX;mov r0,r9;bl dump;add r9,#800
 
 	pop {pc}
 MCSPI_SYST:.word 0x48098024
@@ -317,7 +343,20 @@ MCSPI_IRQENABLE:.word 0x4809801C
 MCSPI_IRQSTATUS:.word 0x48098018
 
 spiwrite:
-	push {lr}
+	push {r9,lr}
+	mov r9,r0
+
+	ldr r0,MCSPI_IRQSTATUS
+	mvn r1,#0
+	str r1,[r0]
+
+	ldr r0,MCSPI_CH0STAT
+	ldr r1,[r0]
+	tst r1,#1
+	beq .r.skip
+	ldr r0,MCSPI_RX0
+	ldr r1,[r0]
+.r.skip:
 
 	#MCSPI_MODULCTRL =1
 	ldr r0,MCSPI_MODULCTRL
@@ -327,7 +366,7 @@ spiwrite:
 	#MCSPI_CHxCONF =0x0011 24D3 ???
 	ldr r0,MCSPI_CH0CONF
 	mov r1,#0
-	orr r1,#9<<2  /* 32 divider 1.5Mhz */
+	orr r1,#15<<2  /* 32 divider 1.5Mhz */
 	orr r1,#1<<6  /* EPOL */
 	orr r1,#31<<7  /* 8-bit word length */
 	#orr r1,#2<<12 /* transmit only */
@@ -342,22 +381,22 @@ spiwrite:
 
 	#MCSPI_TXx =byte
 	ldr r0,MCSPI_TX0
-	mov r1,#0b10010000
+	mov r1,r9,lsl #24
 	str r1,[r0]
 
 	#poll MCSPI_CHxSTAT[1] TXS =1
-	ldr r0,MCSPI_CH0STAT
+	#ldr r0,MCSPI_CH0STAT
 .tx.loop:
-	ldr r1,[r0]
-	tst r1,#2
-	beq .tx.loop
+	#ldr r1,[r0]
+	#tst r1,#2
+	#beq .tx.loop
 
 	#MCSPI_CH0CTRL =0
 	#ldr r0,MCSPI_CH0CTRL
 	#mov r1,#0
 	#str r1,[r0]
 
-	pop {pc}
+	pop {r9,pc}
 	
 MCSPI_MODULCTRL:.word 0x48098028
 MCSPI_CH0CONF:.word 0x4809802C 
@@ -368,16 +407,6 @@ MCSPI_RX0:.word 0x4809803C
 spiread:
 	push {lr}
 
-	#ldr r0,MCSPI_CH0STAT
-	#ldr r1,[r0]
-	#tst r1,#1
-	#beq .r.skip
-
-	#ldr r0,MCSPI_RX0
-	#ldr r1,[r0]
-
-
-.r.skip:
 	#MCSPI_CHxCONF =0x0011 24D3 ???
 	#ldr r0,MCSPI_CH0CONF
 	#mov r1,#0
@@ -409,9 +438,9 @@ spiread:
 	ldr r9,[r1]
 
 	#MCSPI_CH0CTRL =0
-	#ldr r0,MCSPI_CH0CTRL
-	#mov r1,#0
-	#str r1,[r0]
+	ldr r0,MCSPI_CH0CTRL
+	mov r1,#0
+	str r1,[r0]
 
 	mov r0,r9
 	pop {pc}
