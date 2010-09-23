@@ -82,6 +82,8 @@ drawtouch:
 
 
 	ldr	r0,TS_PNTR
+	cmp	r0,r1
+	popeq	{pc}
 	mov	r3,#0
 	str	r3,[r0]
 	str	r1,TS_PNTR
