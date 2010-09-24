@@ -547,6 +547,10 @@ charpixel:
 	add r0,#4
 	bx lr
 
+cacheflush:
+	mcr	p15,0,r0,c7,c5,0
+	bx lr
+
 
 # ---------------------------
 halt:	b halt
