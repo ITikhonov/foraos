@@ -19,29 +19,28 @@ start:
 realstart:
 	bl	vauxinit
 	bl	spiinit
+	bl	tsinit
 	mov	r0,#0
 	push	{r0}
 	bl dot
+
+	bl touchscreen
 	
 	ldr	r1,DISPC_GFX_BA0
 	ldr	r1,[r1]
 	str	r1,TS_PNTR
 
-	bl	drawnames
-
-	b	halt
+	#bl	drawnames
 
 .rs.loop:
-	bl	touchscreen
-	bl	drawtouch
+	#bl	touchscreen
+	#bl	drawtouch
 
+	bl	tsirq
 	pop	{r1}
 	add	r1,#1
 	push	{r1}
 	bl	dumpall
-
-	mov	r0,#4; bl dot
-
 
 	b	.rs.loop
 DISPC_GFX_BA0:	.word 0x48050480
@@ -124,7 +123,6 @@ vauxinit:
 	ldr	r1,[r0]
 	mov	r1,#0b100
 	str	r1,[r0]
-
 
 	ldr	r0,GPIO_OE2
 	ldr	r1,[r0]
@@ -396,6 +394,29 @@ spiinit:
 	mvn r1,#0
 	str r1,[r0]
 
+
+	#MCSPI_MODULCTRL =1
+	ldr r0,MCSPI_MODULCTRL
+	mov r1,#1
+	str r1,[r0]
+
+	#MCSPI_CHxCONF =0x0011 24D3 ???
+	ldr r0,MCSPI_CH0CONF
+	mov r1,#0
+	orr r1,#15<<2  /* 32 divider 1.5Mhz */
+	orr r1,#1<<6  /* EPOL */
+	orr r1,#31<<7  /* 8-bit word length */
+	#orr r1,#2<<12 /* transmit only */
+	orr r1,#1<<16 /* no transmission on Slave Output */
+	orr r1,#1<<20 /* Force */
+	str r1,[r0]
+
+	#MCSPI_CH0CTRL =1
+	ldr r0,MCSPI_CH0CTRL
+	mov r1,#1
+	str r1,[r0]
+
+
 	pop {pc}
 	
 PRCM.CM_FCLKEN1_CORE:.word 0x48004A00
@@ -421,44 +442,9 @@ spiwrite:
 	ldr r0,MCSPI_RX0
 	ldr r1,[r0]
 .r.skip:
-
-	#MCSPI_MODULCTRL =1
-	ldr r0,MCSPI_MODULCTRL
-	mov r1,#1
-	str r1,[r0]
-
-	#MCSPI_CHxCONF =0x0011 24D3 ???
-	ldr r0,MCSPI_CH0CONF
-	mov r1,#0
-	orr r1,#15<<2  /* 32 divider 1.5Mhz */
-	orr r1,#1<<6  /* EPOL */
-	orr r1,#31<<7  /* 8-bit word length */
-	#orr r1,#2<<12 /* transmit only */
-	orr r1,#1<<16 /* no transmission on Slave Output */
-	orr r1,#1<<20 /* Force */
-	str r1,[r0]
-
-	#MCSPI_CH0CTRL =1
-	ldr r0,MCSPI_CH0CTRL
-	mov r1,#1
-	str r1,[r0]
-
-	#MCSPI_TXx =byte
 	ldr r0,MCSPI_TX0
 	mov r1,r9,lsl #24
 	str r1,[r0]
-
-	#poll MCSPI_CHxSTAT[1] TXS =1
-	#ldr r0,MCSPI_CH0STAT
-.tx.loop:
-	#ldr r1,[r0]
-	#tst r1,#2
-	#beq .tx.loop
-
-	#MCSPI_CH0CTRL =0
-	#ldr r0,MCSPI_CH0CTRL
-	#mov r1,#0
-	#str r1,[r0]
 
 	pop {r9,pc}
 	
@@ -471,27 +457,6 @@ MCSPI_RX0:.word 0x4809803C
 spiread:
 	push {lr}
 
-	#MCSPI_CHxCONF =0x0011 24D3 ???
-	#ldr r0,MCSPI_CH0CONF
-	#mov r1,#0
-	#orr r1,#9<<2  /* 32 divider 1.5Mhz */
-	#orr r1,#1<<6  /* EPOL */
-	#orr r1,#7<<7  /* 8-bit word length */
-	#orr r1,#1<<12 /* receive only */
-	#orr r1,#1<<16 /* no transmission on SOMI */
-	#orr r1,#1<<20 /* Force */
-	#str r1,[r0]
-
-	#MCSPI_CH0CTRL =1
-	#ldr r0,MCSPI_CH0CTRL
-	#mov r1,#0
-	#str r1,[r0]
-
-	#ldr r0,MCSPI_TX0
-	#mov r1,#0
-	#str r1,[r0]
-
-	#poll MCSPI_CHxSTAT[1] RXS =1
 	ldr r0,MCSPI_CH0STAT
 .rx.loop:
 	ldr r1,[r0]
@@ -500,11 +465,6 @@ spiread:
 
 	ldr r1,MCSPI_RX0
 	ldr r9,[r1]
-
-	#MCSPI_CH0CTRL =0
-	ldr r0,MCSPI_CH0CTRL
-	mov r1,#0
-	str r1,[r0]
 
 	mov r0,r9
 	pop {pc}
@@ -615,6 +575,31 @@ drawname:
 cacheflush:
 	mcr	p15,0,r0,c7,c5,0
 	bx lr
+
+tsinit:
+	ldr	r0,GPIO11MUX
+	ldr	r1,[r0]
+	mov	r1,#0b1011100000000
+	orr	r1,#0b100
+	str	r1,[r0]
+
+	ldr	r0,GPIO_OE1
+	ldr	r1,[r0]
+	orr	r1,#1<<11
+	str	r1,[r0]
+
+	bx	lr
+
+tsirq:
+	ldr	r0,GPIO_DATAIN1
+	ldr	r0,[r0]
+	ands	r0,#(1<<11)
+	bx	lr
+
+GPIO11MUX:.word 0x48002A24 
+GPIO_OE1:.word 0x48310034
+GPIO_DATAIN1:.word 0x48310038
+
 
 
 # ---------------------------
