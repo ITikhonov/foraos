@@ -40,6 +40,9 @@ realstart:
 	pop	{r1}
 	add	r1,#1
 	push	{r1}
+	push	{r0}
+	bleq	touchscreen
+	pop	{r0}
 	bl	dumpall
 
 	b	.rs.loop
@@ -411,11 +414,6 @@ spiinit:
 	orr r1,#1<<20 /* Force */
 	str r1,[r0]
 
-	#MCSPI_CH0CTRL =1
-	ldr r0,MCSPI_CH0CTRL
-	mov r1,#1
-	str r1,[r0]
-
 
 	pop {pc}
 	
@@ -442,6 +440,12 @@ spiwrite:
 	ldr r0,MCSPI_RX0
 	ldr r1,[r0]
 .r.skip:
+
+	#MCSPI_CH0CTRL =1
+	ldr r0,MCSPI_CH0CTRL
+	mov r1,#1
+	str r1,[r0]
+
 	ldr r0,MCSPI_TX0
 	mov r1,r9,lsl #24
 	str r1,[r0]
@@ -465,6 +469,10 @@ spiread:
 
 	ldr r1,MCSPI_RX0
 	ldr r9,[r1]
+
+	ldr r0,MCSPI_CH0CTRL
+	mov r1,#0
+	str r1,[r0]
 
 	mov r0,r9
 	pop {pc}
