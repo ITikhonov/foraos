@@ -33,7 +33,7 @@ def ai(x):
 
 f=open('names.bin','w')
 for x in atomsname:
-	s=''.join([chr(map.index(y)) for y in x])+'\0'*(8-len(x))
+	s=''.join([chr(map.index(y)) for y in x])+'\x20'*(8-len(x))
 	assert len(s)==8
 	f.write(s)
 f.write('\0')

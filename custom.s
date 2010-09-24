@@ -606,7 +606,7 @@ drawname:
 	lsr r1,#8; bl drawchar
 	lsr r1,#8; bl drawchar
 
-	mov r1,#0
+	mov r1,#0x20
 	bl drawchar
 	bl drawchar
 
