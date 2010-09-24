@@ -27,10 +27,8 @@ realstart:
 	ldr	r1,[r1]
 	str	r1,TS_PNTR
 
-	ldr	r0,DISPC_GFX_BA0
-	ldr	r0,[r0]
-	mov	r1,#0
-	bl	char
+	bl	drawnames
+
 	b	halt
 
 .rs.loop:
@@ -513,8 +511,9 @@ spiread:
 
 char:
 	push {lr}
-	adr r2,FONT
-	#add r2,r1,lsl #4
+	adrl r2,FONT
+	and r1,#0xff
+	add r2,r1,lsl #6
 
 	bl tworows; bl tworows; bl tworows; bl tworows
 	bl tworows; bl tworows; bl tworows; bl tworows
@@ -547,6 +546,72 @@ charpixel:
 	add r0,#4
 	bx lr
 
+drawchar:
+	push {r1,r8,lr}
+	# r0= y*256+x
+	# a = y*800*4*32 + x*4*16
+	# a'= (y*800*2+x)*4*16
+	mov r8,r0
+	lsr r0,#8
+	mov r2,#800*2
+	mul r0,r2,r0
+	and r2,r8,#0xff
+	cmp r2,#49
+	andeq r8,#0xff00
+	addeq r8,#0x100
+	addne r8,#1
+
+	add r0,r2
+	lsl r0,#6
+	ldr	r2,DISPC_GFX_BA0
+	ldr	r2,[r2]
+	add	r0,r2
+	bl char
+
+	mov r0,r8
+	pop {r1,r8,pc}
+
+drawnames:
+	push {r8,lr}
+	adrl r8,FORTH
+	mov r0,#0
+
+.drawnames.loop:
+	ldr r1,[r8]
+
+	cmp r1,#0
+	popeq {r8,pc}
+
+	uxtah r8,r8,r1
+	lsr r1,#16
+	bl drawname
+	b .drawnames.loop
+
+	pop {r8,pc}
+
+drawname:
+	push {r8,lr}
+	adrl r8,NAMES
+	add r8,r1,lsl #3
+
+	ldr r1,[r8],#4
+	bl drawchar
+	lsr r1,#8; bl drawchar
+	lsr r1,#8; bl drawchar
+	lsr r1,#8; bl drawchar
+
+	ldr r1,[r8]
+	bl drawchar
+	lsr r1,#8; bl drawchar
+	lsr r1,#8; bl drawchar
+	lsr r1,#8; bl drawchar
+
+	mov r1,#0
+	bl drawchar
+	bl drawchar
+
+	pop {r8,pc}
+
 cacheflush:
 	mcr	p15,0,r0,c7,c5,0
 	bx lr
@@ -556,6 +621,11 @@ cacheflush:
 halt:	b halt
 
 FONT: .incbin "font.bin"
+.align 4
+FORTH: .incbin "code.bin"
+.align 4
+NAMES: .incbin "names.bin"
 
+.align 4
 end:
 

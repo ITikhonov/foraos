@@ -3,12 +3,16 @@ ASFLAGS=-mfpu=neon
 
 all: custom.bin
 
-custom.bin: custom font.bin
+custom.bin: custom
 	bin/objcopy -O binary custom custom.bin
 
 custom: custom.o
 	bin/ld -o custom custom.o
 
+custom.o: font.bin code.bin names.bin
+
+code.bin: code.fth compile.py
+	python ./compile.py
 
 install:
 	sudo mount /dev/sdb1 /mnt
