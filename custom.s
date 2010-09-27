@@ -21,105 +21,108 @@ realstart:
 	bl	spiinit
 	bl	tsinit
 	mov	r0,#0
-	push	{r0}
+	mov	r9,#0
 	bl dot
-
-	bl touchscreen
-	
-	ldr	r1,DISPC_GFX_BA0
-	ldr	r1,[r1]
-	str	r1,TS_PNTR
 
 	#bl	drawnames
 
 .rs.loop:
-	#bl	touchscreen
-	#bl	drawtouch
+	bl	touchscreen
 
-	bl	tsirq
-	pop	{r1}
-	add	r1,#1
-	push	{r1}
-	push	{r0}
-	bleq	touchscreen
-	pop	{r0}
+	mov	r0,#0xc00
+	ldr	r1,TS_POINT
+	bl	drawnum
+
+	add	r0,#1
+	ldr	r1,TS_AVG
+	bl	drawnum
+
+	mov	r0,#0xd00;
+	ldr r1,TS_POOL; bl drawnum; add r0,#1
+	ldr r1,TS_POOL+4; bl drawnum; add r0,#1
+	ldr r1,TS_POOL+8; bl drawnum; add r0,#1
+	ldr r1,TS_POOL+12; bl drawnum;
+
+	mov	r0,#0xe00;
+	ldr r1,TS_POOL+16; bl drawnum; add r0,#1
+	ldr r1,TS_POOL+20; bl drawnum; add r0,#1
+	ldr r1,TS_POOL+24; bl drawnum; add r0,#1
+	ldr r1,TS_POOL+28; bl drawnum;
+
+	add	r9,#1
+	mov	r1,r9
 	bl	dumpall
 
 	b	.rs.loop
 DISPC_GFX_BA0:	.word 0x48050480
 
 touchscreen:
-	push {lr}
-	mov	r0,#0b10010000
-	bl spiwrite; bl spiread
-	lsr r0,#11
-	str r0,TS_YLST
+	push {r9,r10,r11,lr}
+	adr r9,TS_POOL
+	mov r10,#0
+	bl .tsone; bl .tsone; bl .tsone; bl .tsone
+	bl .tsone; bl .tsone; bl .tsone; bl .tsone
+	lsr r10,#3; bic r10,#0xf000
+	str r10,TS_AVG
 
-	mov	r0,#0b11010000
-	bl spiwrite; bl spiread
-	lsr r0,#11
-	str r0,TS_XLST
+	adr r9,TS_POOL
+	mov r11,#0
+	bl .tsone2; bl .tsone2; bl .tsone2; bl .tsone2
+	bl .tsone2; bl .tsone2; bl .tsone2; bl .tsone2
+	cmp r10,#0
+	popeq {r9,r10,r11,pc}
 
-	pop {pc}
-TS_XMIN:.word 0
-TS_XMAX:.word 0
-TS_YMIN:.word 0
-TS_YMAX:.word 0
-TS_XLST:.word 0
-TS_YLST:.word 0
-TS_PNTR:.word 0
-
-drawtouch:
-	push {lr}
-
-	# x*800/4096
-	ldr r0,TS_XLST
-	mov r1,#800
-	add r1,#45
-	mul r0,r1,r0
-	lsr r0,#12
-	subs r0,#20
-	movmi r0,#0
-	cmp r0,#800
-	movpl r0,#800
-	subpl r0,#1
-
-	# y*600/4096
-	ldr r2,TS_YLST
-	mov r1,#480
-	add r1,#65
-	mul r2,r1,r2
-	lsr r2,#12
-	subs r2,#35
-	movmi r2,#0
-	cmp r2,#480
-	movpl r2,#480
-	subpl r2,#1
+	lsr r11,#3; bic r11,#0xf000
+	str r11,TS_POINT
 	
-	str r0,TS_XMIN
-	str r2,TS_YMIN
+	pop {r9,r10,r11,pc}
 
-	mov	r1,#(800*4)
-	mul	r2,r1,r2
+.tsone:
+	push {r8,lr}
+	mov r0,#0b10010000 /* Y */
+	bl spiwrite; bl spiread
+	mov r8,r0,lsr #11
 
-	ldr	r1,DISPC_GFX_BA0
-	ldr	r1,[r1]
+	mov r0,#0b11010000 /* X */
+	bl spiwrite; bl spiread
+	orr r8,r0,lsl #5
 
-	add	r1,r2
+	str r8,[r9],#4
+	uadd16 r10,r10,r8
 
-	add	r1,r0,lsl #2
-	mvn	r0,#0
-	str	r0,[r1]
+	pop {r8,pc}
 
+# r9 is POOL pointr, r10 is average, r11 is accumulator
+.tsone2:
+	push {lr}
 
-	ldr	r0,TS_PNTR
-	cmp	r0,r1
-	popeq	{pc}
-	mov	r3,#0
-	str	r3,[r0]
-	str	r1,TS_PNTR
+	ldr r0,[r9],#4
+	ssub16 r1,r10,r0
+
+	# lower part
+	sxth r2,r1
+	cmp r2,#5; bgt .tsone2.out
+	cmp r2,#-5; blt .tsone2.out
+
+	# higher part
+	sxth r2,r1,ror #16
+	cmp r2,#5; bgt .tsone2.out
+	cmp r2,#-5; blt .tsone2.out
+
+	uadd16 r11,r11,r0
 
 	pop {pc}
+
+.tsone2.out:
+	mov r10,#0
+	pop {pc}
+
+
+TS_POINT:.word 0
+TS_AVG:.word 0
+TS_POOL:.word 0,0,0,0,0,0,0,0
+TS_N:.word 0
+TS_PRES:.word 0
 
 vauxinit:
 	ldr	r0,GPIO54MUX
@@ -313,7 +316,7 @@ PRCCTRL: .word 0x48307250
 # --------------------------------------
 
 dumpall:
-	push {lr}
+	push {r9,lr}
 	push {r1}
 	push {r0}
 	mov r9,#800
@@ -335,17 +338,8 @@ dumpall:
 	mov r0,r9;bl dump;add r9,#800
 	ldr r1,PADCONF_CLK;ldr r1,[r1];mov r0,r9;bl dump;add r9,#800
 	ldr r1,PADCONF_SOMI;ldr r1,[r1];mov r0,r9;bl dump;add r9,#800
-	add r9,#800
-	ldr r1,TS_XLST;mov r0,r9;bl dump;add r9,#800
-	ldr r1,TS_YLST;mov r0,r9;bl dump;add r9,#800
-	add r9,#800
-	ldr r1,TS_XMIN;mov r0,r9;bl dump;add r9,#800
-	ldr r1,TS_YMIN;mov r0,r9;bl dump;add r9,#800
-	add r9,#800
-	ldr r1,TS_XMAX;mov r0,r9;bl dump;add r9,#800
-	ldr r1,TS_YMAX;mov r0,r9;bl dump;add r9,#800
 
-	pop {pc}
+	pop {r9,pc}
 MCSPI_SYST:.word 0x48098024
 PADCONF_CLK:.word 0x480021C8   /* 00010111 00000000 00010111 00000000 */
                                /*       simo                clk       */
@@ -406,7 +400,7 @@ spiinit:
 	#MCSPI_CHxCONF =0x0011 24D3 ???
 	ldr r0,MCSPI_CH0CONF
 	mov r1,#0
-	orr r1,#15<<2  /* 32 divider 1.5Mhz */
+	orr r1,#13<<2  /* 32 divider 1.5Mhz */
 	orr r1,#1<<6  /* EPOL */
 	orr r1,#31<<7  /* 8-bit word length */
 	#orr r1,#2<<12 /* transmit only */
@@ -459,7 +453,7 @@ MCSPI_CH0STAT:.word 0x48098030
 MCSPI_RX0:.word 0x4809803C 
 
 spiread:
-	push {lr}
+	push {r9,lr}
 
 	ldr r0,MCSPI_CH0STAT
 .rx.loop:
@@ -475,7 +469,7 @@ spiread:
 	str r1,[r0]
 
 	mov r0,r9
-	pop {pc}
+	pop {r9,pc}
 
 char:
 	push {lr}
@@ -580,11 +574,26 @@ drawname:
 
 	pop {r8,pc}
 
+drawnum:
+	push {r8,lr}
+	mov r8,r1
+	ror r8,#28; and r1,r8,#0xf; add r1,#0x30; cmp r1,#0x3a; addge r1,#7; bl drawchar
+	ror r8,#28; and r1,r8,#0xf; add r1,#0x30; cmp r1,#0x3a; addge r1,#7; bl drawchar
+	ror r8,#28; and r1,r8,#0xf; add r1,#0x30; cmp r1,#0x3a; addge r1,#7; bl drawchar
+	ror r8,#28; and r1,r8,#0xf; add r1,#0x30; cmp r1,#0x3a; addge r1,#7; bl drawchar
+
+	ror r8,#28; and r1,r8,#0xf; add r1,#0x30; cmp r1,#0x3a; addge r1,#7; bl drawchar
+	ror r8,#28; and r1,r8,#0xf; add r1,#0x30; cmp r1,#0x3a; addge r1,#7; bl drawchar
+	ror r8,#28; and r1,r8,#0xf; add r1,#0x30; cmp r1,#0x3a; addge r1,#7; bl drawchar
+	ror r8,#28; and r1,r8,#0xf; add r1,#0x30; cmp r1,#0x3a; addge r1,#7; bl drawchar
+	pop {r8,pc}
+
 cacheflush:
 	mcr	p15,0,r0,c7,c5,0
 	bx lr
 
 tsinit:
+	push	{lr}
 	ldr	r0,GPIO11MUX
 	ldr	r1,[r0]
 	mov	r1,#0b1011100000000
@@ -596,7 +605,9 @@ tsinit:
 	orr	r1,#1<<11
 	str	r1,[r0]
 
-	bx	lr
+	mov	r0,#0b10010000
+	bl spiwrite; bl spiread
+	pop	{pc}
 
 tsirq:
 	ldr	r0,GPIO_DATAIN1

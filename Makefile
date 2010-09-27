@@ -1,5 +1,5 @@
 AS=bin/as
-ASFLAGS=-mfpu=neon
+ASFLAGS=-mcpu=cortex-a8 -mfpu=neon
 
 all: custom.bin
 
