@@ -20,11 +20,38 @@ realstart:
 	bl	vauxinit
 	bl	spiinit
 	bl	tsinit
+
+	mvn	r0,#0
+
+	ldr	r1,DISPC_GFX_BA0
+	ldr	r1,[r1]
+
+	mov	r2,#0x5d00
+	add	r2,#0x00de
+	lsl	r2,#2
+	add	r2,r1
+	str	r0,[r2]
+
+	mov	r2,#0x6000
+	add	r2,#0x00c2
+	lsl	r2,#2
+	add	r2,r1
+	str	r0,[r2]
+
+	mov	r2,#0x30000
+	add	r2,#0x0a900
+	add	r2,#0x0009e
+	lsl	r2,#2
+	add	r2,r1
+	str	r0,[r2]
+
+
 	mov	r0,#0
 	mov	r9,#0
-	bl dot
 
-	bl	drawnames
+	# 30:30 = (30*800+30)*4
+
+	#bl	drawnames
 
 .rs.loop:
 	bl	touchscreen
