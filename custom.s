@@ -126,27 +126,41 @@ draw_hightlight:
 	cmp r1,#29; movls r1,#2; bls .draw_hightlight.div
 	cmp r1,#39; movls r1,#3; bls .draw_hightlight.div
 	mov r1,#4
-.draw_hightlight.div:
+	.draw_hightlight.div:
 
-	mov r3,r2,lsl #2; add r3,r2 /* Y*4+Y */
-	add r3,r1 /* +X */
-
-	mov r4,r1,lsl #3; add r4,r1; add r4,r1 /* X*8+X+X */
-
-	mov r0,r4
-	orr r0,r2,lsl #8
-	mov r1,r3
+	mov r0,r1
+	orr r0,r2,lsl #2
 
 	mov r3,#0xaa
 	orr r3,#0xaa00
 	orr r3,#0xaa0000
 	orr r3,#0xaa000000
 	str r3,DRAW_BG
-	bl drawname
+
+	bl redraw
+	
 	mov r3,#0
 	str r3,DRAW_BG
 
 	pop {pc}
+
+
+redraw:
+	push {lr}
+	adrl r3,DEFS
+	ldr r3,[r3,r0,lsl #2]
+	uxth r1,r3
+
+	# y=pos/4 x=pos%4
+	mov r2,r0,lsr #2
+	and r0,r0,#3
+	mov r3,r0,lsl #3; add r3,r0; add r3,r0 /* X*10 */
+	mov r0,r3
+	orr r0,r2,lsl #8
+	bl drawname
+	pop {pc}
+
+SELECT: .word 0xffffffff
 
 /* 
    tsup - when screen was touched and not touched any more
@@ -814,6 +828,8 @@ halt:	b halt
 FONT: .incbin "font.bin"
 .align 4
 FORTH: .incbin "code.bin"
+.align 4
+DEFS: .incbin "defs.bin"
 .align 4
 NAMES: .incbin "names.bin"
 

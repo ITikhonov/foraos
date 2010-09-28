@@ -39,8 +39,12 @@ for x in atomsname:
 f.write('\0')
 f.close()
 
+ff=open('defs.bin','w')
 f=open('code.bin','w')
 for x in words:
+	ff.write(u16(ai(x[0])))
+	ff.write(u16(f.tell()/4))
+
 	d=[u16(ai(y)) for y in x]
 	s=''.join(d)
 	if (len(s)+2)%4==0: s=s+'\0\0\0\0'
