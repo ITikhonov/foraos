@@ -17,6 +17,7 @@ start:
 
 
 realstart:
+	bl	vfpinit
 	bl	vauxinit
 	bl	spiinit
 	bl	tsinit
@@ -89,8 +90,16 @@ tsup:
 tsdown:
 	push {lr}
 	str	r0,TS_POINT
+
 	mov	r1,r0
 	mov	r0,#0xc00
+	bl	drawnum
+
+	ldr r0,TS_POINT
+	bl ts_to_sc
+	mov	r1,r0
+	mov	r0,#0xc00
+	add	r0,#20
 	bl	drawnum
 
 	mov r0,#0
@@ -717,7 +726,51 @@ GPIO11MUX:.word 0x48002A24
 GPIO_OE1:.word 0x48310034
 GPIO_DATAIN1:.word 0x48310038
 
+vfpinit:
+        mrc p15, 0, r1, c1, c0, 2
+        orr r1, r1, #(0xf << 20)
+        mcr p15, 0, r1, c1, c0, 2
+        mov r1, #0
+        mcr p15, 0, r1, c7, c5, 4
 
+	mov r0,#0x40000000
+	fmxr fpexc, r0
+	bx lr
+
+ts_to_sc:
+	uxth r1,r0 /* Y */
+	fmsr s0,r1
+	fuitos s0,s0
+
+	flds s1,TS_Y0
+	fadds s0,s0,s1
+	flds s1,TS_YD
+	fdivs s0,s0,s1
+
+	ftouis s0,s0
+	fmrs r2,s0
+
+	uxth r1,r0,ror #16 /* X */
+	fmsr s0,r1
+	fuitos s0,s0
+
+	flds s1,TS_X0
+	fadds s0,s0,s1
+	flds s1,TS_XD
+	fdivs s0,s0,s1
+
+	ftouis s0,s0
+	fmrs r1,s0
+
+	#r1=SX,r2=SY
+	pkhbt r0,r2,r1,lsl #16
+	bx lr
+	
+
+TS_XD: .float 4.85135135135
+TS_YD: .float 7.68888888889
+TS_X0: .float -107.459459459
+TS_Y0: .float -166.333333333
 
 # ---------------------------
 halt:	b halt
