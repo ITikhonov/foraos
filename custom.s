@@ -30,11 +30,8 @@ realstart:
 	bl	touchscreen
 
 	mov	r0,#0xc00
-	ldr	r1,TS_POINT
-	bl	drawnum
-
-	add	r0,#1
-	ldr	r1,TS_AVG
+	add	r0,#9
+	ldr	r1,TS_UP
 	bl	drawnum
 
 	mov	r0,#0xd00;
@@ -56,25 +53,86 @@ realstart:
 	b	.rs.loop
 DISPC_GFX_BA0:	.word 0x48050480
 
+tsup:
+	ldr r0,TS_POINT
+	str r0,TS_UP
+	bx lr
+
+tsdown:
+	push {lr}
+	str	r0,TS_POINT
+	mov	r1,r0
+	mov	r0,#0xc00
+	bl	drawnum
+
+	mov r0,#0
+	str r0,TS_UP
+	pop {pc}
+	
+
+/* 
+   tsup - when screen was touched and not touched any more
+   tsdown - when screen was not touched and touched now
+
+   BEFORE LOAD: if PRESS and !IRQ - tsup, ret
+		if !IRQ - ret
+
+   AFTER  LOAD: if !IRQ - tsup, ret
+   AFTER VALID: tsdown
+
+ */
 touchscreen:
-	push {r9,r10,r11,lr}
+	push {lr}
+
+	bl tsirq
+	bne .touchscreen.up
+
+	bl tsload
+
+	bl tsirq
+	popne {pc}
+
+	bl tsvalidate
+	popeq {pc}
+
+	str r0,TS_PRES
+	bl tsdown
+	
+	pop {pc}
+
+.touchscreen.up:
+	ldr r0,TS_PRES
+	cmp r0,#0
+	blne tsup
+	pop {pc}
+	
+
+tsload:
+	push {r9,r10,lr}
 	adr r9,TS_POOL
 	mov r10,#0
 	bl .tsone; bl .tsone; bl .tsone; bl .tsone
 	bl .tsone; bl .tsone; bl .tsone; bl .tsone
 	lsr r10,#3; bic r10,#0xf000
 	str r10,TS_AVG
+	mov r0,r10
+	pop {r9,r10,pc}
 
+tsvalidate:
+	push {r9,r10,r11,lr}
+	mov r10,r0
+	# validate data, use r10 as average
 	adr r9,TS_POOL
 	mov r11,#0
 	bl .tsone2; bl .tsone2; bl .tsone2; bl .tsone2
 	bl .tsone2; bl .tsone2; bl .tsone2; bl .tsone2
+	# r10 is zero if some data invalid, r11 is sum of valid
 	cmp r10,#0
+	mvneq r0,#0
 	popeq {r9,r10,r11,pc}
-
-	lsr r11,#3; bic r11,#0xf000
-	str r11,TS_POINT
 	
+	lsr r11,#3; bic r11,#0xf000
+	mov r0,r11
 	pop {r9,r10,r11,pc}
 
 .tsone:
@@ -123,6 +181,7 @@ TS_AVG:.word 0
 TS_POOL:.word 0,0,0,0,0,0,0,0
 TS_N:.word 0
 TS_PRES:.word 0
+TS_UP:.word 0
 
 vauxinit:
 	ldr	r0,GPIO54MUX
@@ -610,10 +669,11 @@ tsinit:
 	pop	{pc}
 
 tsirq:
-	ldr	r0,GPIO_DATAIN1
-	ldr	r0,[r0]
-	ands	r0,#(1<<11)
-	bx	lr
+	push	{r9,lr}
+	ldr	r9,GPIO_DATAIN1
+	ldr	r9,[r9]
+	ands	r9,#(1<<11)
+	pop	{r9,pc}
 
 GPIO11MUX:.word 0x48002A24 
 GPIO_OE1:.word 0x48310034
