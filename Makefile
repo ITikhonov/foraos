@@ -1,5 +1,5 @@
 AS=bin/as
-ASFLAGS=-march=armv7-a -mcpu=cortex-a8 -mfpu=vfpv3
+ASFLAGS=-march=armv7-a -mcpu=cortex-a8 -mfpu=neon
 
 all: custom.bin
 

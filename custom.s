@@ -102,11 +102,35 @@ tsdown:
 	add	r0,#20
 	bl	drawnum
 
+	#bl draw_hightlight
+
 	mov r0,#0
 	str r0,TS_UP
 	pop {pc}
-	
 
+draw_hightlight:
+	push {lr}
+	ldr r0,TS_POINT
+	bl ts_to_sc
+
+	# row = y/32, col=x/16
+	# word = row*5 + col/10
+
+	uxth r1,r0 		/* Y */
+	lsr r1,#5
+	add r1,r1,lsl #2	/* Y*4+Y */
+
+	uxth r2,r0,ror #16	/* X */
+	lsr r2,#5		/* X/16/2 */
+	pop {pc}
+
+DIV5:
+.byte 0,0,0,0,0
+.byte 1,1,1,1,1
+.byte 2,2,2,2,2
+.byte 3,3,3,3,3
+.byte 4,4,4,4,4
+.align 4
 /* 
    tsup - when screen was touched and not touched any more
    tsdown - when screen was not touched and touched now
