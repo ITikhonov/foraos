@@ -52,7 +52,7 @@ realstart:
 
 	# 30:30 = (30*800+30)*4
 
-	#bl	drawnames
+	bl	drawnames
 
 .rs.loop:
 	bl	touchscreen
@@ -102,7 +102,7 @@ tsdown:
 	add	r0,#20
 	bl	drawnum
 
-	#bl draw_hightlight
+	bl draw_hightlight
 
 	mov r0,#0
 	str r0,TS_UP
@@ -117,20 +117,37 @@ draw_hightlight:
 	# word = row*5 + col/10
 
 	uxth r1,r0 		/* Y */
-	lsr r1,#5
-	add r1,r1,lsl #2	/* Y*4+Y */
+	lsr r2,r1,#5
 
-	uxth r2,r0,ror #16	/* X */
-	lsr r2,#5		/* X/16/2 */
+	uxth r1,r0,ror #16	/* X */
+	lsr r1,#4
+	cmp r1, #9; movls r1,#0; bls .draw_hightlight.div
+	cmp r1,#19; movls r1,#1; bls .draw_hightlight.div
+	cmp r1,#29; movls r1,#2; bls .draw_hightlight.div
+	cmp r1,#39; movls r1,#3; bls .draw_hightlight.div
+	mov r1,#4
+.draw_hightlight.div:
+
+	mov r3,r2,lsl #2; add r3,r2 /* Y*4+Y */
+	add r3,r1 /* +X */
+
+	mov r4,r1,lsl #3; add r4,r1; add r4,r1 /* X*8+X+X */
+
+	mov r0,r4
+	orr r0,r2,lsl #8
+	mov r1,r3
+
+	mov r3,#0xaa
+	orr r3,#0xaa00
+	orr r3,#0xaa0000
+	orr r3,#0xaa000000
+	str r3,DRAW_BG
+	bl drawname
+	mov r3,#0
+	str r3,DRAW_BG
+
 	pop {pc}
 
-DIV5:
-.byte 0,0,0,0,0
-.byte 1,1,1,1,1
-.byte 2,2,2,2,2
-.byte 3,3,3,3,3
-.byte 4,4,4,4,4
-.align 4
 /* 
    tsup - when screen was touched and not touched any more
    tsdown - when screen was not touched and touched now
@@ -763,31 +780,26 @@ vfpinit:
 
 ts_to_sc:
 	uxth r1,r0 /* Y */
-	fmsr s0,r1
-	fuitos s0,s0
+	vmov    s0, r1
+	vcvt.f32.u32    s0, s0
+	vldr    s1, TS_Y0
+	vadd.f32        s0, s0, s1
+	vldr    s1, TS_YD
+	vdiv.f32        s0, s0, s1
+	vcvt.u32.f32   s0, s0
+	vmov    r2, s0
 
-	flds s1,TS_Y0
-	fadds s0,s0,s1
-	flds s1,TS_YD
-	fdivs s0,s0,s1
+	uxth    r1, r0, ror #16 /* X */
+	vmov    s0, r1
+	vcvt.f32.u32    s0, s0
+	vldr    s1, TS_X0
+	vadd.f32        s0, s0, s1
+	vldr    s1, TS_XD
+	vdiv.f32        s0, s0, s1
+	vcvt.u32.f32   s0, s0
+	vmov    r1, s0
+	pkhbt   r0, r2, r1, lsl #16
 
-	ftouis s0,s0
-	fmrs r2,s0
-
-	uxth r1,r0,ror #16 /* X */
-	fmsr s0,r1
-	fuitos s0,s0
-
-	flds s1,TS_X0
-	fadds s0,s0,s1
-	flds s1,TS_XD
-	fdivs s0,s0,s1
-
-	ftouis s0,s0
-	fmrs r1,s0
-
-	#r1=SX,r2=SY
-	pkhbt r0,r2,r1,lsl #16
 	bx lr
 	
 
