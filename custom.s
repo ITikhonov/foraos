@@ -64,20 +64,7 @@ realstart:
 	bl	drawnum
 
 	mov	r0,#0xd00;
-	ldr r1,TS_POOL; bl drawnum; add r0,#1
-	ldr r1,TS_POOL+4; bl drawnum; add r0,#1
-	ldr r1,TS_POOL+8; bl drawnum; add r0,#1
-	ldr r1,TS_POOL+12; bl drawnum;
-
-	mov	r0,#0xe00;
-	ldr r1,TS_POOL+16; bl drawnum; add r0,#1
-	ldr r1,TS_POOL+20; bl drawnum; add r0,#1
-	ldr r1,TS_POOL+24; bl drawnum; add r0,#1
-	ldr r1,TS_POOL+28; bl drawnum;
-
-	#add	r9,#1
-	#mov	r1,r9
-	#bl	dumpall
+	ldr r1,SELECT; bl drawnum;
 
 	b	.rs.loop
 DISPC_GFX_BA0:	.word 0x48050480
@@ -109,7 +96,7 @@ tsdown:
 	pop {pc}
 
 draw_hightlight:
-	push {lr}
+	push {r8,r9,lr}
 	ldr r0,TS_POINT
 	bl ts_to_sc
 
@@ -131,6 +118,12 @@ draw_hightlight:
 	mov r0,r1
 	orr r0,r2,lsl #2
 
+	ldr r9,SELECT
+	cmp r9,r0
+	popeq {r8,r9,pc}
+
+	mov r8,r0
+
 	mov r3,#0xaa
 	orr r3,#0xaa00
 	orr r3,#0xaa0000
@@ -142,11 +135,22 @@ draw_hightlight:
 	mov r3,#0
 	str r3,DRAW_BG
 
-	pop {pc}
+	str r8,SELECT
+	cmn r9,#1
+	popeq {r8,r9,pc}
 
+	mov r0,r9
+	bl redraw
+
+	pop {r8,r9,pc}
 
 redraw:
 	push {lr}
+	cmp r0,#(DEFSE-DEFS)/4
+	blo .redraw.go
+	mov r0,#0
+	pop {pc}
+.redraw.go:
 	adrl r3,DEFS
 	ldr r3,[r3,r0,lsl #2]
 	uxth r1,r3
@@ -158,6 +162,7 @@ redraw:
 	mov r0,r3
 	orr r0,r2,lsl #8
 	bl drawname
+	mov r0,#1
 	pop {pc}
 
 SELECT: .word 0xffffffff
@@ -686,21 +691,16 @@ drawchar:
 
 drawnames:
 	push {r8,lr}
-	adrl r8,FORTH
-	mov r0,#0
+	mov r8,#0
 
 .drawnames.loop:
-	ldr r1,[r8]
-
-	cmp r1,#0
+	mov r0,r8
+	bl redraw
+	cmp r0,#0
 	popeq {r8,pc}
-
-	uxtah r8,r8,r1
-	lsr r1,#16
-	bl drawname
+	add r8,#1
 	b .drawnames.loop
 
-	pop {r8,pc}
 
 drawname:
 	push {r8,lr}
@@ -830,6 +830,7 @@ FONT: .incbin "font.bin"
 FORTH: .incbin "code.bin"
 .align 4
 DEFS: .incbin "defs.bin"
+DEFSE:
 .align 4
 NAMES: .incbin "names.bin"
 
