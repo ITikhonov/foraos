@@ -24,10 +24,11 @@ realstart:
 	mov	r9,#0
 	bl dot
 
-	#bl	drawnames
+	bl	drawnames
 
 .rs.loop:
 	bl	touchscreen
+
 
 	mov	r0,#0xc00
 	add	r0,#9
@@ -46,9 +47,9 @@ realstart:
 	ldr r1,TS_POOL+24; bl drawnum; add r0,#1
 	ldr r1,TS_POOL+28; bl drawnum;
 
-	add	r9,#1
-	mov	r1,r9
-	bl	dumpall
+	#add	r9,#1
+	#mov	r1,r9
+	#bl	dumpall
 
 	b	.rs.loop
 DISPC_GFX_BA0:	.word 0x48050480
@@ -561,8 +562,8 @@ tworows:
 
 charpixel:
 	lsls r1,#1
-	mvncs r3,#0
-	movcc r3,#0
+	movcs r3,r4
+	movcc r3,r5
 	str r3,[r0]
 	add r0,#4
 	bx lr
@@ -612,6 +613,10 @@ drawnames:
 
 drawname:
 	push {r8,lr}
+
+	ldr r4,DRAW_FG
+	ldr r5,DRAW_BG
+
 	adrl r8,NAMES
 	add r8,r1,lsl #3
 
@@ -635,6 +640,9 @@ drawname:
 
 drawnum:
 	push {r8,lr}
+	ldr r4,DRAW_FG
+	ldr r5,DRAW_BG
+
 	mov r8,r1
 	ror r8,#28; and r1,r8,#0xf; add r1,#0x30; cmp r1,#0x3a; addge r1,#7; bl drawchar
 	ror r8,#28; and r1,r8,#0xf; add r1,#0x30; cmp r1,#0x3a; addge r1,#7; bl drawchar
@@ -646,6 +654,9 @@ drawnum:
 	ror r8,#28; and r1,r8,#0xf; add r1,#0x30; cmp r1,#0x3a; addge r1,#7; bl drawchar
 	ror r8,#28; and r1,r8,#0xf; add r1,#0x30; cmp r1,#0x3a; addge r1,#7; bl drawchar
 	pop {r8,pc}
+
+DRAW_FG:.word 0xFFFFFFFF
+DRAW_BG:.word 0
 
 cacheflush:
 	mcr	p15,0,r0,c7,c5,0
