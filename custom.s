@@ -1,3 +1,11 @@
+# X coodinate in high part, in higher register (r1)
+# Y coodinate in lower part, in lower register (r0)
+
+# rework plan:
+# drawing
+# ts
+
+
 .section ".start", #alloc, #execinstr
 
 start:
@@ -30,11 +38,14 @@ DISPC_GFX_BA0:	.word 0x48050480
 
 tsup:
 	push {lr}
-	ldr r0,TS_POINT
-
 	ldr r1,SELECT
+
+	uxth r2,r1,ror #16
+	uxth r1,r1
+	add r2,r1,lsl #2
+
 	adrl r0,FORTH
-	add r0,r1,lsl #5
+	add r0,r2,lsl #5
 	bl topad
 	bl drawpad
 
@@ -54,8 +65,6 @@ topad:
 	ldr r2,[r0],#4
 	str r2,[r1],#4
 	bx lr
-	
-
 
 tsdown:
 	push {lr}
@@ -71,18 +80,18 @@ draw_hightlight:
 	# word = row*5 + col/10
 
 	uxth r1,r0 		/* Y */
-	lsr r2,r1,#5
+	lsr r1,r1,#5
 
-	uxth r1,r0,ror #16	/* X */
-	lsr r1,#4
-	cmp r1, #9; movls r1,#0; bls .draw_hightlight.div
-	cmp r1,#19; movls r1,#1; bls .draw_hightlight.div
-	cmp r1,#29; movls r1,#2; bls .draw_hightlight.div
-	cmp r1,#39; movls r1,#3; bls .draw_hightlight.div
-	mov r1,#4
+	uxth r2,r0,ror #16	/* X */
+	lsr r2,#4
+	cmp r2, #9; movls r2,#0; bls .draw_hightlight.div
+	cmp r2,#19; movls r2,#1; bls .draw_hightlight.div
+	cmp r2,#29; movls r2,#2; bls .draw_hightlight.div
+	cmp r2,#39; movls r2,#3; bls .draw_hightlight.div
+	mov r2,#4
 	.draw_hightlight.div:
 
-	pkhbt   r0,r2,r1,lsl #16 /* r2=x, r1=y */
+	pkhbt   r0,r1,r2,lsl #16
 
 	ldr r9,SELECT
 	cmp r9,r0
@@ -111,39 +120,37 @@ draw_hightlight:
 	pop {r8,r9,pc}
 
 redraw:
-	uxth r1,r0
-	uxth r0,r0,ror #16
-	# r1=x, r0=y
+	uxth r1,r0,ror #16
+	uxth r0,r0
+	# r0=y, r1=x
+
+	cmp r1,#4
+	bxhs lr
 
 	cmp r0,#9
 	bhs redraw_pad
 
-	cmp r1,#4
-	blo redraw_names
+	cmp r0,#8
+	bxeq lr
+
+	blo redraw_name
+
 	bx lr
 
-redraw_names:
+redraw_name:
 	push {lr}
-	orr r0,r1,lsl #2
+
+	mov r4,r0,lsl #2 
+	add r4,r1
 	
-	cmp r0,#32
-	blo .redraw.go
-	mov r0,#0
-	pop {pc}
-.redraw.go:
 	adrl r3,FORTH
-	ldr r3,[r3,r0,lsl #5]
-	uxth r1,r3
+	ldr r3,[r3,r4,lsl #5]
+	uxth r4,r3
 
-	# y=pos/4 x=pos%4
-	mov r2,r0,lsr #2
-	and r0,r0,#3
-	mov r3,r0,lsl #3; add r3,r0; add r3,r0 /* X*10 */
-	mov r0,r3
-	orr r0,r2,lsl #8
-
+	bl cell_to_xy
+	mov r0,r2
+	mov r1,r4
 	bl drawname
-	mov r0,#1
 	pop {pc}
 
 # r1=x, r0=y
@@ -699,7 +706,7 @@ drawall:
 	pop {r8,pc}
 .drawrow:
 	push {lr}
-	orr r0,r8,#0x0000; bl redraw
+	orr r0,r8,#0x00000; bl redraw
 	orr r0,r8,#0x10000; bl redraw
 	orr r0,r8,#0x20000; bl redraw
 	orr r0,r8,#0x30000; bl redraw
@@ -736,7 +743,7 @@ drawname:
 
 drawpad:
 	push {r8,lr}
-	mov r8,#0x90000
+	mov r8,#0x9
 	bl .drawrow; bl .drawrow; bl .drawrow; bl .drawrow
 	pop {r8,pc}
 
@@ -836,7 +843,7 @@ TS_Y0: .float -166.333333333
 # ---------------------------
 halt:	b halt
 
-PAD: .word 0,1,2,3,4; .fill 16,2,0; PADE:
+PAD: .word 0,2,4,6,8; .fill 16,2,0; PADE:
 
 .align 4
 FONT: .incbin "font.bin"
