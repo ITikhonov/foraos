@@ -46,6 +46,9 @@ realstart:
 	add	r2,r1
 	str	r0,[r2]
 
+	adrl r0,FORTH
+	bl drawdef
+
 
 	mov	r0,#0
 	mov	r9,#0
@@ -728,6 +731,28 @@ drawname:
 	bl drawchar
 
 	pop {r8,pc}
+
+drawdef:
+	push {r8,r9,lr}
+	mov r8,r0
+	mov r0,#0xa00
+
+	add r8,#4
+
+.drawdef.loop:
+	ldr r9,[r8],#4
+	uxth r1,r9
+	cmp r1,#0
+	popeq {r8,r9,pc}
+	bl drawname
+	uxth r1,r9,ror #16
+	cmp r1,#0
+	popeq {r8,r9,pc}
+	bl drawname
+	b .drawdef.loop
+
+	pop {r8,r9,pc}
+	
 
 drawnum:
 	push {r8,lr}

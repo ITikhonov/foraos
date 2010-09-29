@@ -55,6 +55,7 @@ for x in words:
 	f.write(s)
 f.write('\0\0\0\0')
 f.close()
+ff.close()
 
 print 'names:',atomsname
 
