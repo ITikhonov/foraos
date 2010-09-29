@@ -14,11 +14,13 @@ words=[x for x in words if x!=[]]
 
 print words
 
+right='number atom compile run'.split()
+
 # three tables:
 # atoms -> name
 # defs
 
-atomsname=['']
+atomsname=['']+right
 
 for x in words:
 	for w in x:
@@ -36,7 +38,8 @@ for x in atomsname:
 	s=''.join([chr(map.index(y)) for y in x])+'\x20'*(8-len(x))
 	assert len(s)==8
 	f.write(s)
-f.write('\0')
+assert f.tell()<=1024
+f.write('\0'*(1024-f.tell()))
 f.close()
 
 f=open('code.bin','w')
@@ -46,10 +49,10 @@ for x in words:
 	s=s+'\0'*(32-len(s))
 	print x[0],repr(s)
 	f.write(s)
-
 f.write(('\0'*32)*(32-len(words)))
-
 f.close()
 
 print 'names:',atomsname
+
+
 

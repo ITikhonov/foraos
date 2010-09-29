@@ -22,7 +22,7 @@ realstart:
 	bl	spiinit
 	bl	tsinit
 
-	bl	drawnames
+	bl	drawall
 .rs.loop:
 	bl	touchscreen
 	b	.rs.loop
@@ -36,7 +36,7 @@ tsup:
 	adrl r0,FORTH
 	add r0,r1,lsl #5
 	bl topad
-	bl drawdef
+	bl drawpad
 
 	mov r0,#0
 	str r0,TS_PRES 
@@ -82,8 +82,7 @@ draw_hightlight:
 	mov r1,#4
 	.draw_hightlight.div:
 
-	mov r0,r1
-	orr r0,r2,lsl #2
+	pkhbt   r0,r2,r1,lsl #16 /* r2=x, r1=y */
 
 	ldr r9,SELECT
 	cmp r9,r0
@@ -112,7 +111,21 @@ draw_hightlight:
 	pop {r8,r9,pc}
 
 redraw:
+	uxth r1,r0
+	uxth r0,r0,ror #16
+	# r1=x, r0=y
+
+	cmp r0,#9
+	bhs redraw_pad
+
+	cmp r1,#4
+	blo redraw_names
+	bx lr
+
+redraw_names:
 	push {lr}
+	orr r0,r1,lsl #2
+	
 	cmp r0,#32
 	blo .redraw.go
 	mov r0,#0
@@ -128,8 +141,30 @@ redraw:
 	mov r3,r0,lsl #3; add r3,r0; add r3,r0 /* X*10 */
 	mov r0,r3
 	orr r0,r2,lsl #8
+
 	bl drawname
 	mov r0,#1
+	pop {pc}
+
+# r1=x, r0=y
+cell_to_xy:
+	mov r2,r1,lsl #3; add r2,r1; add r2,r1 /* X*10 */
+	orr r2,r0,lsl #8
+	bx lr
+
+redraw_pad:
+	push {lr}
+	bl cell_to_xy
+
+	sub r0,#9
+	add r1,r0,lsl #2
+	mov r0,r1
+
+	adrl r1,PAD
+	add r1,r0,lsl #1
+	ldrh r1,[r1]
+	mov r0,r2
+	bl drawname
 	pop {pc}
 
 SELECT: .word 0
@@ -655,20 +690,21 @@ drawchar:
 	mov r0,r8
 	pop {r1,r8,pc}
 
-drawnames:
+drawall:
+	push {r8,lr}
+	mov r8,#0
+	bl .drawrow; bl .drawrow; bl .drawrow; bl .drawrow; bl .drawrow;
+	bl .drawrow; bl .drawrow; bl .drawrow; bl .drawrow; bl .drawrow;
+	bl .drawrow; bl .drawrow; bl .drawrow; bl .drawrow; bl .drawrow;
+	pop {r8,pc}
+.drawrow:
 	push {lr}
-	mov r0,#0; bl redraw; mov r0,#1; bl redraw; mov r0,#2; bl redraw; mov r0,#3; bl redraw
-	mov r0,#4; bl redraw; mov r0,#5; bl redraw; mov r0,#6; bl redraw; mov r0,#7; bl redraw
-
-	mov r0,#0x08; bl redraw; mov r0,#0x09; bl redraw; mov r0,#0x0a; bl redraw; mov r0,#0x0b; bl redraw;
-	mov r0,#0x0c; bl redraw; mov r0,#0x0d; bl redraw; mov r0,#0x0e; bl redraw; mov r0,#0x0f; bl redraw;
-
-	mov r0,#0x10; bl redraw; mov r0,#0x11; bl redraw; mov r0,#0x12; bl redraw; mov r0,#0x13; bl redraw;
-	mov r0,#0x14; bl redraw; mov r0,#0x15; bl redraw; mov r0,#0x16; bl redraw; mov r0,#0x17; bl redraw;
-
-	mov r0,#0x18; bl redraw; mov r0,#0x19; bl redraw; mov r0,#0x1a; bl redraw; mov r0,#0x1b; bl redraw;
-	mov r0,#0x1c; bl redraw; mov r0,#0x1d; bl redraw; mov r0,#0x1e; bl redraw; mov r0,#0x1f; bl redraw;
-
+	orr r0,r8,#0x0000; bl redraw
+	orr r0,r8,#0x10000; bl redraw
+	orr r0,r8,#0x20000; bl redraw
+	orr r0,r8,#0x30000; bl redraw
+	orr r0,r8,#0x40000; bl redraw
+	add r8,#0x1
 	pop {pc}
 
 drawname:
@@ -698,24 +734,11 @@ drawname:
 
 	pop {r8,pc}
 
-drawdef:
-	push {r8,r9,lr}
-	adr r8,PAD
-	mov r0,#0x900
-	bl .drawdef.one; bl .drawdef.one; add r0,#0xd8
-	bl .drawdef.one; bl .drawdef.one; add r0,#0xd8
-	bl .drawdef.one; bl .drawdef.one; add r0,#0xd8
-	bl .drawdef.one; bl .drawdef.one;
-	pop {r8,r9,pc}
-
-.drawdef.one:
-	push {lr}
-	ldr r9,[r8],#4
-	uxth r1,r9
-	bl drawname
-	uxth r1,r9,ror #16
-	bl drawname
-	pop {pc}
+drawpad:
+	push {r8,lr}
+	mov r8,#0x90000
+	bl .drawrow; bl .drawrow; bl .drawrow; bl .drawrow
+	pop {r8,pc}
 
 drawnum:
 	push {r8,lr}
@@ -813,7 +836,7 @@ TS_Y0: .float -166.333333333
 # ---------------------------
 halt:	b halt
 
-PAD: .fill 16,2,0; PADE:
+PAD: .word 0,1,2,3,4; .fill 16,2,0; PADE:
 
 .align 4
 FONT: .incbin "font.bin"
