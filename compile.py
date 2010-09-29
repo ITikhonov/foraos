@@ -18,7 +18,7 @@ print words
 # atoms -> name
 # defs
 
-atomsname=['\0']
+atomsname=['']
 
 for x in words:
 	for w in x:
