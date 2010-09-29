@@ -125,7 +125,7 @@ redraw:
 	# r0=y, r1=x
 
 	cmp r1,#4
-	bxhs lr
+	bhs redraw_right
 
 	cmp r0,#9
 	bhs redraw_pad
@@ -136,6 +136,16 @@ redraw:
 	blo redraw_name
 
 	bx lr
+
+redraw_right:
+	push {lr}
+	cmp r0,#4
+	pophs {pc}
+	bl cell_to_xy
+	add r1,r0,#1
+	mov r0,r2
+	bl drawname
+	pop {pc}
 
 redraw_name:
 	push {lr}
