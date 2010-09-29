@@ -46,7 +46,8 @@ realstart:
 	add	r2,r1
 	str	r0,[r2]
 
-	adrl r0,FORTH
+	adrl r0,FORTH+4
+	bl topad
 	bl drawdef
 
 
@@ -73,9 +74,32 @@ realstart:
 DISPC_GFX_BA0:	.word 0x48050480
 
 tsup:
+	push {lr}
 	ldr r0,TS_POINT
 	str r0,TS_UP
-	bx lr
+
+	ldr r1,SELECT
+	adrl r0,DEFS
+	ldr r0,[r0,r1,lsl #2]
+	uxth r0,r0,ror #16
+
+	adrl r1,FORTH
+	add r1,r0,lsl #2
+	add r0,r1,#4
+	bl topad
+	bl drawdef
+
+	pop {pc}
+
+topad:
+	push {lr}
+	adrl r1,PAD
+.topad.loop:
+	ldr r2,[r0],#4
+	str r2,[r1],#4
+	lsls r2,#16
+	bne .topad.loop
+	pop {pc}
 
 tsdown:
 	push {lr}
@@ -734,10 +758,8 @@ drawname:
 
 drawdef:
 	push {r8,r9,lr}
-	mov r8,r0
+	adr r8,PAD
 	mov r0,#0xa00
-
-	add r8,#4
 
 .drawdef.loop:
 	ldr r9,[r8],#4
@@ -752,7 +774,6 @@ drawdef:
 	b .drawdef.loop
 
 	pop {r8,r9,pc}
-	
 
 drawnum:
 	push {r8,lr}
@@ -850,6 +871,9 @@ TS_Y0: .float -166.333333333
 # ---------------------------
 halt:	b halt
 
+PAD: .fill 16,2,0
+
+.align 4
 FONT: .incbin "font.bin"
 .align 4
 FORTH: .incbin "code.bin"
