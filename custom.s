@@ -46,9 +46,9 @@ realstart:
 	add	r2,r1
 	str	r0,[r2]
 
-	adrl r0,FORTH+4
-	bl topad
-	bl drawdef
+	#adrl r0,FORTH+4
+	#bl topad
+	#bl drawdef
 
 
 	mov	r0,#0
@@ -79,27 +79,29 @@ tsup:
 	str r0,TS_UP
 
 	ldr r1,SELECT
-	adrl r0,DEFS
-	ldr r0,[r0,r1,lsl #2]
-	uxth r0,r0,ror #16
-
-	adrl r1,FORTH
-	add r1,r0,lsl #2
-	add r0,r1,#4
+	adrl r0,FORTH
+	add r0,r1,lsl #5
 	bl topad
 	bl drawdef
+
+	mov r0,#0
+	str r0,TS_PRES 
 
 	pop {pc}
 
 topad:
 	push {lr}
 	adrl r1,PAD
-.topad.loop:
+	bl .topad.one; bl .topad.one; bl .topad.one; bl .topad.one
+	bl .topad.one; bl .topad.one; bl .topad.one; bl .topad.one
+	pop {pc}
+
+.topad.one:
 	ldr r2,[r0],#4
 	str r2,[r1],#4
-	lsls r2,#16
-	bne .topad.loop
-	pop {pc}
+	bx lr
+	
+
 
 tsdown:
 	push {lr}
@@ -173,13 +175,13 @@ draw_hightlight:
 
 redraw:
 	push {lr}
-	cmp r0,#(DEFSE-DEFS)/4
+	cmp r0,#32
 	blo .redraw.go
 	mov r0,#0
 	pop {pc}
 .redraw.go:
-	adrl r3,DEFS
-	ldr r3,[r3,r0,lsl #2]
+	adrl r3,FORTH
+	ldr r3,[r3,r0,lsl #5]
 	uxth r1,r3
 
 	# y=pos/4 x=pos%4
@@ -192,7 +194,7 @@ redraw:
 	mov r0,#1
 	pop {pc}
 
-SELECT: .word 0xffffffff
+SELECT: .word 0
 
 /* 
    tsup - when screen was touched and not touched any more
@@ -717,17 +719,20 @@ drawchar:
 	pop {r1,r8,pc}
 
 drawnames:
-	push {r8,lr}
-	mov r8,#0
+	push {lr}
+	mov r0,#0; bl redraw; mov r0,#1; bl redraw; mov r0,#2; bl redraw; mov r0,#3; bl redraw
+	mov r0,#4; bl redraw; mov r0,#5; bl redraw; mov r0,#6; bl redraw; mov r0,#7; bl redraw
 
-.drawnames.loop:
-	mov r0,r8
-	bl redraw
-	cmp r0,#0
-	popeq {r8,pc}
-	add r8,#1
-	b .drawnames.loop
+	mov r0,#0x08; bl redraw; mov r0,#0x09; bl redraw; mov r0,#0x0a; bl redraw; mov r0,#0x0b; bl redraw;
+	mov r0,#0x0c; bl redraw; mov r0,#0x0d; bl redraw; mov r0,#0x0e; bl redraw; mov r0,#0x0f; bl redraw;
 
+	mov r0,#0x10; bl redraw; mov r0,#0x11; bl redraw; mov r0,#0x12; bl redraw; mov r0,#0x13; bl redraw;
+	mov r0,#0x14; bl redraw; mov r0,#0x15; bl redraw; mov r0,#0x16; bl redraw; mov r0,#0x17; bl redraw;
+
+	mov r0,#0x18; bl redraw; mov r0,#0x19; bl redraw; mov r0,#0x1a; bl redraw; mov r0,#0x1b; bl redraw;
+	mov r0,#0x1c; bl redraw; mov r0,#0x1d; bl redraw; mov r0,#0x1e; bl redraw; mov r0,#0x1f; bl redraw;
+
+	pop {pc}
 
 drawname:
 	push {r8,lr}
@@ -760,20 +765,20 @@ drawdef:
 	push {r8,r9,lr}
 	adr r8,PAD
 	mov r0,#0xa00
+	bl .drawdef.one; bl .drawdef.one; add r0,#0xd8
+	bl .drawdef.one; bl .drawdef.one; add r0,#0xd8
+	bl .drawdef.one; bl .drawdef.one; add r0,#0xd8
+	bl .drawdef.one; bl .drawdef.one;
+	pop {r8,r9,pc}
 
-.drawdef.loop:
+.drawdef.one:
+	push {lr}
 	ldr r9,[r8],#4
 	uxth r1,r9
-	cmp r1,#0
-	popeq {r8,r9,pc}
 	bl drawname
 	uxth r1,r9,ror #16
-	cmp r1,#0
-	popeq {r8,r9,pc}
 	bl drawname
-	b .drawdef.loop
-
-	pop {r8,r9,pc}
+	pop {pc}
 
 drawnum:
 	push {r8,lr}
@@ -871,15 +876,12 @@ TS_Y0: .float -166.333333333
 # ---------------------------
 halt:	b halt
 
-PAD: .fill 16,2,0
+PAD: .fill 16,2,0; PADE:
 
 .align 4
 FONT: .incbin "font.bin"
 .align 4
 FORTH: .incbin "code.bin"
-.align 4
-DEFS: .incbin "defs.bin"
-DEFSE:
 .align 4
 NAMES: .incbin "names.bin"
 
