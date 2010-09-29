@@ -119,23 +119,34 @@ draw_hightlight:
 
 	pop {r8,r9,pc}
 
-redraw:
+select:
 	uxth r1,r0,ror #16
 	uxth r0,r0
 	# r0=y, r1=x
 
 	cmp r1,#4
-	bhs redraw_right
-
-	cmp r0,#9
-	bhs redraw_pad
+	movhs r2,#0 /* right */
+	bxhs lr
 
 	cmp r0,#8
+	moveq r2,#-1 /* separator */
 	bxeq lr
-
-	blo redraw_name
-
+	movhs r2,#1 /* pad */
+	movlo r2,#2 /* names */
 	bx lr
+
+
+redraw:
+	push {lr}
+
+	bl select
+	pop {lr}
+	add pc,r2,lsl #2
+	bx lr
+	b redraw_right
+	b redraw_pad
+	b redraw_name
+
 
 redraw_right:
 	push {lr}
@@ -149,7 +160,6 @@ redraw_right:
 
 redraw_name:
 	push {lr}
-
 	mov r4,r0,lsl #2 
 	add r4,r1
 	
