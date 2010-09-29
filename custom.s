@@ -22,61 +22,15 @@ realstart:
 	bl	spiinit
 	bl	tsinit
 
-	mvn	r0,#0
-
-	ldr	r1,DISPC_GFX_BA0
-	ldr	r1,[r1]
-
-	mov	r2,#0x5d00
-	add	r2,#0x00de
-	lsl	r2,#2
-	add	r2,r1
-	str	r0,[r2]
-
-	mov	r2,#0x6000
-	add	r2,#0x00c2
-	lsl	r2,#2
-	add	r2,r1
-	str	r0,[r2]
-
-	mov	r2,#0x30000
-	add	r2,#0x0a900
-	add	r2,#0x0009e
-	lsl	r2,#2
-	add	r2,r1
-	str	r0,[r2]
-
-	#adrl r0,FORTH+4
-	#bl topad
-	#bl drawdef
-
-
-	mov	r0,#0
-	mov	r9,#0
-
-	# 30:30 = (30*800+30)*4
-
 	bl	drawnames
-
 .rs.loop:
 	bl	touchscreen
-
-
-	mov	r0,#0xc00
-	add	r0,#9
-	ldr	r1,TS_UP
-	bl	drawnum
-
-	mov	r0,#0xd00;
-	ldr r1,SELECT; bl drawnum;
-
 	b	.rs.loop
 DISPC_GFX_BA0:	.word 0x48050480
 
 tsup:
 	push {lr}
 	ldr r0,TS_POINT
-	str r0,TS_UP
 
 	ldr r1,SELECT
 	adrl r0,FORTH
@@ -106,27 +60,11 @@ topad:
 tsdown:
 	push {lr}
 	str	r0,TS_POINT
-
-	mov	r1,r0
-	mov	r0,#0xc00
-	bl	drawnum
-
-	ldr r0,TS_POINT
-	bl ts_to_sc
-	mov	r1,r0
-	mov	r0,#0xc00
-	add	r0,#20
-	bl	drawnum
-
 	bl draw_hightlight
-
-	mov r0,#0
-	str r0,TS_UP
 	pop {pc}
 
 draw_hightlight:
 	push {r8,r9,lr}
-	ldr r0,TS_POINT
 	bl ts_to_sc
 
 	# row = y/32, col=x/16
@@ -307,7 +245,6 @@ TS_AVG:.word 0
 TS_POOL:.word 0,0,0,0,0,0,0,0
 TS_N:.word 0
 TS_PRES:.word 0
-TS_UP:.word 0
 
 vauxinit:
 	ldr	r0,GPIO54MUX
@@ -764,7 +701,7 @@ drawname:
 drawdef:
 	push {r8,r9,lr}
 	adr r8,PAD
-	mov r0,#0xa00
+	mov r0,#0x900
 	bl .drawdef.one; bl .drawdef.one; add r0,#0xd8
 	bl .drawdef.one; bl .drawdef.one; add r0,#0xd8
 	bl .drawdef.one; bl .drawdef.one; add r0,#0xd8
