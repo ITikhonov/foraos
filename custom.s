@@ -101,12 +101,42 @@ up_name:
 	push {lr}
 	add r1,r0,lsl #2
 
+	ldr r2,PAD_AT
+	cmn r2,#1
+	bne .up_name.edit
+
 	str r1,ALPHA_NAME
 
 	adrl r0,FORTH
 	add r0,r1,lsl #5
 	bl topad
 	bl drawpad
+
+	ldr r0,SELECT
+	bl redraw
+	mvn r0,#0
+	str r0,SELECT
+
+	pop {pc}
+
+.up_name.edit:
+	adrl r0,PAD
+	add r0,r2,lsl #1
+	strh r1,[r0]
+
+	mov r0,r2,lsr #2
+	add r0,#9
+	and r2,#3
+	orr r0,r2,lsl #16
+
+	mov r1,#0xff
+	add r1,#0xff00
+	str r1,DRAW_BG
+	bl redraw
+
+	ldr r2,PAD_AT
+	add r2,#1
+	str r2,PAD_AT
 
 	pop {pc}
 
@@ -141,9 +171,16 @@ right_atom:
 	pop {lr}
 
 up_pad:
+	sub r0,#9
+	add r1,r0,lsl #2
+	str r1,PAD_AT
+
+	mvn r0,#0
+	str r0,SELECT
 	bx lr
 
 ALPHABET_ON: .word 0
+PAD_AT: .word 0xffffffff
 
 draw_alphabet:
 	push {r8,lr}
@@ -371,9 +408,10 @@ redraw_pad:
 	ldrh r1,[r1]
 	mov r0,r2
 	bl drawname
+
 	pop {pc}
 
-SELECT: .word 0
+SELECT: .word 0xffffffff
 
 /* 
    tsup - when screen was touched and not touched any more
