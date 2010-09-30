@@ -129,14 +129,26 @@ up_name:
 	and r2,#3
 	orr r0,r2,lsl #16
 
-	mov r1,#0xff
-	add r1,#0xff00
-	str r1,DRAW_BG
 	bl redraw
 
 	ldr r2,PAD_AT
 	add r2,#1
 	str r2,PAD_AT
+
+
+	mov r0,r2,lsr #2
+	add r0,#9
+	and r2,#3
+	orr r0,r2,lsl #16
+
+	mov r1,#0xaa
+	orr r1,#0xaa00
+	orr r1,#0xaa0000
+	orr r1,#0xaa000000
+	str r1,DRAW_BG
+	bl redraw
+	mov r1,#0
+	str r1,DRAW_BG
 
 	pop {pc}
 
