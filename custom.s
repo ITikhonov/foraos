@@ -30,8 +30,7 @@ realstart:
 	bl spiinit
 	bl tsinit
 
-	#bl drawall
-	bl draw_alphabet
+	bl drawall
 .rs.loop:
 	bl touchscreen
 	b .rs.loop
@@ -44,6 +43,11 @@ tsup:
 	mov r0,#0
 	str r0,TS_PRES 
 
+	ldr r0,ALPHABET_ON
+	cmp r0,#0
+	popne {lr}
+	bne up_alphabet
+
 	ldr r0,SELECT
 	bl select
 	pop {lr}
@@ -54,6 +58,13 @@ tsup:
 	b up_name
 
 
+	pop {pc}
+
+up_alphabet:
+	push {lr}
+	mov r0,#0
+	str r0,ALPHABET_ON
+	bl drawall
 	pop {pc}
 
 up_name:
@@ -91,6 +102,7 @@ right_atom:
 	push {lr}
 	mov r0,#1
 	str r0,ALPHABET_ON
+	bl draw_alphabet
 	pop {lr}
 
 up_pad:
@@ -229,6 +241,9 @@ select:
 	bxeq lr
 	movhs r2,#1 /* pad */
 	movlo r2,#2 /* names */
+
+	cmp r0,#13
+	movhs r2,#-1
 	bx lr
 
 
@@ -958,7 +973,7 @@ TS_Y0: .float -166.333333333
 # ---------------------------
 halt:	b halt
 
-PAD: .fill 16,2,0; PADE:
+PAD: .fill 16,2,0
 
 .align 4
 FONT: .incbin "font.bin"
