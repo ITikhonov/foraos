@@ -14,7 +14,7 @@ words=[x for x in words if x!=[]]
 
 print words
 
-right='atom compile run save'.split()
+right='atom exit save run'.split()
 
 # three tables:
 # atoms -> name

@@ -156,8 +156,8 @@ up_right:
 	add pc,r0,lsl #2
 	nop
 	b right_atom
-	bx lr
-	bx lr
+	b right_exit
+	b right_save
 	bx lr
 	bx lr
 
@@ -182,14 +182,69 @@ right_atom:
 	bl draw_alphabet
 	pop {lr}
 
+right_exit:
+	push {lr}
+
+	ldr r2,PAD_AT
+	cmn r2,#1
+	beq .right_exit.skipclear
+
+	mov r0,r2,lsr #2
+	add r0,#9
+	and r2,#3
+	orr r0,r2,lsl #16
+	bl redraw
+
+	mvn r0,#0
+	str r0,PAD_AT
+.right_exit.skipclear:
+
+	pop {pc}
+
+
+right_save:
+	push {lr}
+	ldr r1,ALPHA_NAME
+	adrl r0,FORTH
+	add r0,r1,lsl #5
+	bl frompad
+	pop {pc}
+
+frompad:
+	push {lr}
+	adrl r1,PAD
+	bl .frompad.one; bl .frompad.one; bl .frompad.one; bl .frompad.one
+	bl .frompad.one; bl .frompad.one; bl .frompad.one; bl .frompad.one
+	pop {pc}
+
+.frompad.one:
+	ldr r2,[r1],#4
+	str r2,[r0],#4
+	bx lr
+	
+
 up_pad:
+	push {lr}
+	ldr r2,PAD_AT
+	cmn r2,#1
+	beq .up_pad.skipclear
+
+	push {r0,r1}
+	mov r0,r2,lsr #2
+	add r0,#9
+	and r2,#3
+	orr r0,r2,lsl #16
+	bl redraw
+	pop {r0,r1}
+
+.up_pad.skipclear:
 	sub r0,#9
 	add r1,r0,lsl #2
 	str r1,PAD_AT
 
 	mvn r0,#0
 	str r0,SELECT
-	bx lr
+	pop {pc}
 
 ALPHABET_ON: .word 0
 PAD_AT: .word 0xffffffff
