@@ -161,6 +161,42 @@ redraw_alphabet:
 	bl drawchar
 	pop {pc}
 
+alphabet_down:
+	push {lr}
+	bl ts_to_sc
+
+	uxth r1,r0,ror #16
+	uxth r0,r0
+
+	lsr r0,#5
+	lsr r1,#4
+
+	pkhbt r0,r0,r1,lsl #16
+
+	ldr r1,ALPHA_SELECT
+	cmp r0,r1
+	popeq {pc}
+
+	str r0,ALPHA_SELECT
+
+	push {r0}
+	mov r0,r1
+	bl redraw_alphabet
+	pop {r0}
+
+	mov r1,#0xaa
+	orr r1,#0xaa00
+	orr r1,#0xaa0000
+	orr r1,#0xaa000000
+	str r1,DRAW_BG
+	bl redraw_alphabet
+	mov r1,#0
+	str r1,DRAW_BG
+	
+	pop {pc}
+
+ALPHA_SELECT: .word 0
+
 
 topad:
 	push {lr}
@@ -175,10 +211,11 @@ topad:
 	bx lr
 
 tsdown:
-	push {lr}
 	str	r0,TS_POINT
-	bl draw_hightlight
-	pop {pc}
+	ldr r1,ALPHABET_ON
+	cmp r1,#0
+	beq draw_hightlight
+	b alphabet_down
 
 draw_hightlight:
 	push {r8,r9,lr}
