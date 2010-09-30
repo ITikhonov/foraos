@@ -22,7 +22,10 @@ right='atom compile run save'.split()
 
 atomsname=['']+right
 
+defs={}
+
 for x in words:
+	defs[x[0]]=x[1:]
 	for w in x:
 		if w not in atomsname:
 			atomsname.append(w)
@@ -41,16 +44,18 @@ for x in atomsname:
 	assert len(s)==8
 	f.write(s)
 assert f.tell()<=1024
+f.write('\x20'*(1024-f.tell()))
 f.close()
 
 f=open('code.bin','w')
-for x in words:
-	d=[u16(ai(y)) for y in x]
+for x in atomsname:
+	d=[u16(ai(y)) for y in defs.get(x,[])]
 	s=''.join(d)
+	assert len(s)<=32
 	s=s+'\0'*(32-len(s))
-	print x[0],repr(s)
+	print x,repr(s)
 	f.write(s)
-f.write(('\0'*32)*(32-len(words)))
+f.write('\0'*(4096-f.tell()))
 f.close()
 
 print 'names:',atomsname

@@ -67,12 +67,16 @@ up_alphabet:
 	uxth r1,r0,ror #16
 	uxth r0,r0
 
+	cmp r0,#8
+	bhs .up_alphabet_off
+	cmp r1,#16
+	bhs .up_alphabet_off
+
 	add r1,r0,lsl #4 /* symbol */
 
-	adrl r0,NAMES
-	adrl r2,FREENAME
-	ldr r2,[r2]
-	add r0,r2,lsl #3
+	ldr r2,ALPHA_NAME
+	adrl r3,NAMES
+	add r0,r3,r2,lsl #3
 
 	ldr r3,ALPHA_LEN
 	strb r1,[r0,r3]
@@ -85,20 +89,25 @@ up_alphabet:
 
 	pop {pc}
 
-
+.up_alphabet_off:
 	mov r0,#0
 	str r0,ALPHABET_ON
 	bl drawall
 	pop {pc}
 
+ALPHA_NAME: .word 0
+
 up_name:
 	push {lr}
 	add r1,r0,lsl #2
+
+	str r1,ALPHA_NAME
 
 	adrl r0,FORTH
 	add r0,r1,lsl #5
 	bl topad
 	bl drawpad
+
 	pop {pc}
 
 up_right:
@@ -336,16 +345,10 @@ redraw_right:
 
 redraw_name:
 	push {lr}
-	mov r4,r0,lsl #2 
-	add r4,r1
-	
-	adrl r3,FORTH
-	ldr r3,[r3,r4,lsl #5]
-	uxth r4,r3
-
 	bl cell_to_xy
+	add r3,r1,r0,lsl #2
 	mov r0,r2
-	mov r1,r4
+	mov r1,r3
 	bl drawname
 	pop {pc}
 
@@ -1047,8 +1050,6 @@ FONT: .incbin "font.bin"
 FORTH: .incbin "code.bin"
 .align 4
 NAMES: .incbin "names.bin"
-NAMES_FILL: .fill (1024-(.-NAMES)),1,0x20
-FREENAME: .word (NAMES_FILL-NAMES)/8
 
 .align 4
 end:
