@@ -26,6 +26,9 @@ defs={}
 
 for x in words:
 	defs[x[0]]=x[1:]
+	if x[0] not in atomsname:
+		atomsname.append(x[0])
+for x in words:
 	for w in x:
 		if w not in atomsname:
 			atomsname.append(w)
