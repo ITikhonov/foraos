@@ -329,7 +329,7 @@ redraw_right:
 	cmp r0,#4
 	pophs {pc}
 	bl cell_to_xy
-	add r1,r0,#0x11
+	add r1,r0,#1
 	mov r0,r2
 	bl drawname
 	pop {pc}

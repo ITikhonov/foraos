@@ -15,13 +15,12 @@ words=[x for x in words if x!=[]]
 print words
 
 right='atom compile run save'.split()
-numbers='0 1 2 3 4 5 6 7 8 9 A B C D E F'.split()
 
 # three tables:
 # atoms -> name
 # defs
 
-atomsname=['']+numbers+right
+atomsname=['']+right
 
 for x in words:
 	for w in x:
