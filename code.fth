@@ -1,7 +1,4 @@
-@ test1 test2
-! test3 test4
-test1 TBI
-test2 TBI
-test3 TBI
-test4 TBI
-test5 TBI
+@ NATIVE e5900000
+A NATIVE e1a01000
+A! NATIVE e5801000
+DROP NATIVE e49b0004

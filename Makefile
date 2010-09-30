@@ -14,6 +14,8 @@ custom.o: font.bin code.bin names.bin
 code.bin: code.fth compile.py
 	python ./compile.py
 
+code.fth: sample.txt
+
 install: all
 	while ! sudo mount /dev/sdb1 /mnt; do sleep 1; done
 	cp custom.bin /mnt/zImage
@@ -28,3 +30,7 @@ wayback:
 
 font.bin: font.gray refont
 	./refont
+
+sample.txt: sample.o
+	bin/objdump -D sample.o > sample.txt
+	cat sample.txt
