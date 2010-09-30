@@ -62,6 +62,30 @@ tsup:
 
 up_alphabet:
 	push {lr}
+
+	ldr r0,ALPHA_SELECT
+	uxth r1,r0,ror #16
+	uxth r0,r0
+
+	add r1,r0,lsl #4 /* symbol */
+
+	adrl r0,NAMES
+	adrl r2,FREENAME
+	ldr r2,[r2]
+	add r0,r2,lsl #3
+
+	ldr r3,ALPHA_LEN
+	strb r1,[r0,r3]
+	add r3,#1
+	str r3,ALPHA_LEN
+
+	mov r0,#0xc00
+	mov r1,r2
+	bl drawname
+
+	pop {pc}
+
+
 	mov r0,#0
 	str r0,ALPHABET_ON
 	bl drawall
@@ -102,6 +126,8 @@ right_atom:
 	push {lr}
 	mov r0,#1
 	str r0,ALPHABET_ON
+	mov r0,#0
+	str r0,ALPHA_LEN
 	bl draw_alphabet
 	pop {lr}
 
@@ -160,6 +186,9 @@ redraw_alphabet:
 	ldr r5,DRAW_BG
 	bl drawchar
 	pop {pc}
+
+ALPHA_WORD: .word 0,0
+ALPHA_LEN: .word 0
 
 alphabet_down:
 	push {lr}
@@ -1018,6 +1047,8 @@ FONT: .incbin "font.bin"
 FORTH: .incbin "code.bin"
 .align 4
 NAMES: .incbin "names.bin"
+NAMES_FILL: .fill (1024-(.-NAMES)),1,0x20
+FREENAME: .word (NAMES_FILL-NAMES)/8
 
 .align 4
 end:

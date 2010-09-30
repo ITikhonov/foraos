@@ -28,6 +28,8 @@ for x in words:
 		if w not in atomsname:
 			atomsname.append(w)
 
+print 'atoms:',len(atomsname)
+
 def u16(x):
 	return chr(x&0xff)+chr(x>>8)
 
@@ -40,7 +42,6 @@ for x in atomsname:
 	assert len(s)==8
 	f.write(s)
 assert f.tell()<=1024
-f.write('\0'*(1024-f.tell()))
 f.close()
 
 f=open('code.bin','w')
