@@ -38,21 +38,37 @@ DISPC_GFX_BA0:	.word 0x48050480
 
 tsup:
 	push {lr}
-	ldr r1,SELECT
-
-	uxth r2,r1,ror #16
-	uxth r1,r1
-	add r2,r1,lsl #2
-
-	adrl r0,FORTH
-	add r0,r2,lsl #5
-	bl topad
-	bl drawpad
 
 	mov r0,#0
 	str r0,TS_PRES 
 
+	ldr r0,SELECT
+	bl select
+	pop {lr}
+	add pc,r2,lsl #2
+	bx lr
+	b up_right
+	b up_pad
+	b up_name
+
+
 	pop {pc}
+
+up_name:
+	push {lr}
+	add r1,r0,lsl #2
+
+	adrl r0,FORTH
+	add r0,r1,lsl #5
+	bl topad
+	bl drawpad
+	pop {pc}
+
+up_right:
+	bx lr
+
+up_pad:
+	bx lr
 
 topad:
 	push {lr}
@@ -138,7 +154,6 @@ select:
 
 redraw:
 	push {lr}
-
 	bl select
 	pop {lr}
 	add pc,r2,lsl #2
