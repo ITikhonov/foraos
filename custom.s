@@ -25,16 +25,18 @@ start:
 
 
 realstart:
-	bl	vfpinit
-	bl	vauxinit
-	bl	spiinit
-	bl	tsinit
+	bl vfpinit
+	bl vauxinit
+	bl spiinit
+	bl tsinit
 
-	bl	drawall
+	#bl drawall
+	bl draw_alphabet
 .rs.loop:
-	bl	touchscreen
-	b	.rs.loop
-DISPC_GFX_BA0:	.word 0x48050480
+	bl touchscreen
+	b .rs.loop
+
+DISPC_GFX_BA0: .word 0x48050480
 
 tsup:
 	push {lr}
@@ -65,10 +67,88 @@ up_name:
 	pop {pc}
 
 up_right:
+	add pc,r0,lsl #2
+	nop
+	b right_atom
 	bx lr
+	bx lr
+	bx lr
+	bx lr
+
+	bx lr
+	bx lr
+	bx lr
+	bx lr
+	bx lr
+
+	bx lr
+	bx lr
+	bx lr
+	bx lr
+	bx lr
+
+right_atom:
+	push {lr}
+	mov r0,#1
+	str r0,ALPHABET_ON
+	pop {lr}
 
 up_pad:
 	bx lr
+
+ALPHABET_ON: .word 0
+
+draw_alphabet:
+	push {r8,lr}
+	mov r8,#0
+	bl .redraw_alpha_row
+	bl .redraw_alpha_row
+	bl .redraw_alpha_row
+	bl .redraw_alpha_row
+	bl .redraw_alpha_row
+	bl .redraw_alpha_row
+	bl .redraw_alpha_row
+	bl .redraw_alpha_row
+	pop {r8,pc}
+
+.redraw_alpha_row:
+	push {lr}
+	orr r0,r8,#0x00000; bl redraw_alphabet
+	orr r0,r8,#0x10000; bl redraw_alphabet
+	orr r0,r8,#0x20000; bl redraw_alphabet
+	orr r0,r8,#0x30000; bl redraw_alphabet
+	orr r0,r8,#0x40000; bl redraw_alphabet
+	orr r0,r8,#0x50000; bl redraw_alphabet
+	orr r0,r8,#0x60000; bl redraw_alphabet
+	orr r0,r8,#0x70000; bl redraw_alphabet
+	orr r0,r8,#0x80000; bl redraw_alphabet
+	orr r0,r8,#0x90000; bl redraw_alphabet
+	orr r0,r8,#0xa0000; bl redraw_alphabet
+	orr r0,r8,#0xb0000; bl redraw_alphabet
+	orr r0,r8,#0xc0000; bl redraw_alphabet
+	orr r0,r8,#0xd0000; bl redraw_alphabet
+	orr r0,r8,#0xe0000; bl redraw_alphabet
+	orr r0,r8,#0xf0000; bl redraw_alphabet
+	add r8,#1
+	pop {pc}
+
+redraw_alphabet:
+	uxth r1,r0,ror #16
+	uxth r0,r0
+	cmp r0,#8
+	bxhs lr
+	cmp r1,#16
+	bxhs lr
+	push {lr}
+
+	mov r2,r0
+	add r0,r1,r0,lsl #8
+	add r1,r2,lsl #4 /* symbol */
+	ldr r4,DRAW_FG
+	ldr r5,DRAW_BG
+	bl drawchar
+	pop {pc}
+
 
 topad:
 	push {lr}
@@ -168,7 +248,7 @@ redraw_right:
 	cmp r0,#4
 	pophs {pc}
 	bl cell_to_xy
-	add r1,r0,#1
+	add r1,r0,#0x11
 	mov r0,r2
 	bl drawname
 	pop {pc}
@@ -878,7 +958,7 @@ TS_Y0: .float -166.333333333
 # ---------------------------
 halt:	b halt
 
-PAD: .word 0,2,4,6,8; .fill 16,2,0; PADE:
+PAD: .fill 16,2,0; PADE:
 
 .align 4
 FONT: .incbin "font.bin"
