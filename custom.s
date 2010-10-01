@@ -35,7 +35,6 @@ realstart:
 	bl touchscreen
 	b .rs.loop
 
-DISPC_GFX_BA0: .word 0x48050480
 
 tsup:
 	push {lr}
@@ -158,6 +157,12 @@ up_right:
 	b right_atom
 	b right_exit
 	b right_save
+	b right_run
+	bx lr
+
+	bx lr
+	bx lr
+	bx lr
 	bx lr
 	bx lr
 
@@ -167,11 +172,7 @@ up_right:
 	bx lr
 	bx lr
 
-	bx lr
-	bx lr
-	bx lr
-	bx lr
-	bx lr
+DISPC_GFX_BA0: .word 0x48050480
 
 right_atom:
 	push {lr}
@@ -209,6 +210,110 @@ right_save:
 	add r0,r1,lsl #5
 	bl frompad
 	pop {pc}
+
+right_run:
+	push {lr}
+	bl compile
+	bl cacheflush
+	bl run
+	pop {pc}
+
+compile:
+	push {r8,r9,lr}
+	adrl r8,COMPILED
+	adrl r9,PAD
+	bl .compile.one ; bl .compile.one ; bl .compile.one ; bl .compile.one
+	bl .compile.one ; bl .compile.one ; bl .compile.one ; bl .compile.one
+	bl .compile.one ; bl .compile.one ; bl .compile.one ; bl .compile.one
+	bl .compile.one ; bl .compile.one ; bl .compile.one ; bl .compile.one
+
+	ldr r3,BXLR
+	str r3,[r8]
+
+	pop {r8,r9,pc}
+
+BXLR: bx lr
+
+.compile.one:
+	push {lr}
+	ldrh r0,[r9],#2
+
+	adrl r1,FORTH
+	add r1,r0,lsl #5
+
+	ldrh r2,[r1]
+	cmp r2,#0
+	popeq {pc}
+	cmp r2,#1
+	beq .compile.one.native
+	cmp r2,#2
+	beq .compile.one.number
+	pop {pc}
+
+.compile.one.native:
+	ldrh r0,[r1,#2]
+	bl .tonum
+	str r0,[r8],#4
+	pop {pc}
+
+.compile.one.number:
+	push {r0}
+	ldrh r0,[r1,#2]
+	bl .tonum
+
+	pop {r1}
+	adrl r2,NUMBERS
+	str r0,[r2,r1,lsl #2]
+
+	ldr r2,LOADNUM
+	add r2,r1,lsl #2
+	str r2,[r8],#4
+
+	pop {pc}
+
+LOADNUM: .word 0xe59a0000
+
+.tonum:
+	push {r8,r9,lr}
+	adrl r8,NAMES
+	add r8,r0,lsl #3
+
+	ldr r0,[r8]
+	bl .hextoh
+	mov r9,r0
+
+	ldr r0,[r8,#4]
+	bl .hextoh
+
+	pkhbt r0,r0,r9,lsl #16
+	pop {r8,r9,pc}
+
+.hextoh:
+	push {lr}
+	bl .digit; bl .digit; bl .digit; bl .digit
+	mov r0,r1
+	pop {pc}
+
+.digit:
+	and r2,r0,#0xff
+	cmp r2,#61
+	subhs r2,#0x57
+	sublo r2,#0x30
+	orr r1,r2,r1,lsl #4
+	mov r0,r0,ror #8
+	bx lr
+
+run:
+	push {r8,lr}
+
+	adrl r8,COMPILED
+	mov r0,#0x900
+	ldr r1,[r8],#4; bl drawnum; ldr r1,[r8],#4; bl drawnum; ldr r1,[r8],#4; bl drawnum; ldr r1,[r8],#4; bl drawnum; 
+	ldr r1,[r8],#4; bl drawnum; ldr r1,[r8],#4; bl drawnum; ldr r1,[r8],#4; bl drawnum; ldr r1,[r8],#4; bl drawnum; 
+	ldr r1,[r8],#4; bl drawnum; ldr r1,[r8],#4; bl drawnum; ldr r1,[r8],#4; bl drawnum; ldr r1,[r8],#4; bl drawnum; 
+	ldr r1,[r8],#4; bl drawnum; ldr r1,[r8],#4; bl drawnum; ldr r1,[r8],#4; bl drawnum; ldr r1,[r8],#4; bl drawnum; 
+	
+	pop {r8,pc}
 
 frompad:
 	push {lr}
@@ -442,7 +547,7 @@ redraw_right:
 	cmp r0,#4
 	pophs {pc}
 	bl cell_to_xy
-	add r1,r0,#2
+	add r1,r0,#3
 	mov r0,r2
 	bl drawname
 	pop {pc}
@@ -886,6 +991,8 @@ MCSPI_SYSSTATUS:.word 0x48098014
 MCSPI_CH0CTRL:.word 0x48098034 
 MCSPI_IRQENABLE:.word 0x4809801C
 MCSPI_IRQSTATUS:.word 0x48098018
+DRAW_FG:.word 0xFFFFFFFF
+DRAW_BG:.word 0
 
 spiwrite:
 	push {r9,lr}
@@ -1066,10 +1173,10 @@ drawnum:
 	ror r8,#28; and r1,r8,#0xf; add r1,#0x30; cmp r1,#0x3a; addge r1,#7; bl drawchar
 	ror r8,#28; and r1,r8,#0xf; add r1,#0x30; cmp r1,#0x3a; addge r1,#7; bl drawchar
 	ror r8,#28; and r1,r8,#0xf; add r1,#0x30; cmp r1,#0x3a; addge r1,#7; bl drawchar
+
+	mov r1,#0x20; bl drawchar
 	pop {r8,pc}
 
-DRAW_FG:.word 0xFFFFFFFF
-DRAW_BG:.word 0
 
 cacheflush:
 	mcr	p15,0,r0,c7,c5,0
@@ -1155,6 +1262,11 @@ FONT: .incbin "font.bin"
 FORTH: .incbin "code.bin"
 .align 4
 NAMES: .incbin "names.bin"
+
+COMPILED: .fill 1024,4,0
+NUMBERS: .fill 128,4,0
+STACK: .word 0,0,0,0,0,0,0,0
+
 
 .align 4
 end:

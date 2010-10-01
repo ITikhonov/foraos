@@ -20,7 +20,7 @@ right='atom exit save run'.split()
 # atoms -> name
 # defs
 
-atomsname=['','NATIVE']+right
+atomsname=['','NATIVE','NUMBER']+right
 
 defs={}
 
