@@ -74,9 +74,7 @@ up_alphabet:
 
 	add r1,r0,lsl #4 /* symbol */
 
-	ldr r2,ALPHA_NAME
-	adrl r3,NAMES
-	add r0,r3,r2,lsl #3
+	adrl r0,NAMES
 
 	ldr r3,ALPHA_LEN
 	strb r1,[r0,r3]
@@ -84,12 +82,28 @@ up_alphabet:
 	str r3,ALPHA_LEN
 
 	mov r0,#0xc00
-	mov r1,r2
+	mov r1,#0
 	bl drawname
 
 	pop {pc}
 
 .up_alphabet_off:
+	adrl r0,NAMES
+	ldr r1,[r0]
+	ldr r2,[r0,#4]
+
+	mov r3,#0x00000020
+	orr r3,#0x00002000
+	orr r3,#0x00200000
+	orr r3,#0x20000000
+	str r3,[r0]
+	str r3,[r0,#4]
+
+	ldr r3,ALPHA_NAME
+	add r0,r3,lsl #3
+	str r1,[r0]
+	str r2,[r0,#4]
+
 	mov r0,#0
 	str r0,ALPHABET_ON
 	bl drawall
