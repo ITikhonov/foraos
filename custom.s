@@ -29,6 +29,7 @@ realstart:
 	bl vauxinit
 	bl spiinit
 	bl tsinit
+	bl forthinit
 
 	bl drawall
 .rs.loop:
@@ -172,7 +173,6 @@ up_right:
 	bx lr
 	bx lr
 
-DISPC_GFX_BA0: .word 0x48050480
 
 right_atom:
 	push {lr}
@@ -273,6 +273,8 @@ BXLR: bx lr
 
 LOADNUM: .word 0xe59a0000
 
+DISPC_GFX_BA0: .word 0x48050480
+
 .tonum:
 	push {r8,r9,lr}
 	adrl r8,NAMES
@@ -303,7 +305,8 @@ LOADNUM: .word 0xe59a0000
 	mov r0,r0,ror #8
 	bx lr
 
-run:
+
+dumpcode:
 	push {r8,lr}
 
 	adrl r8,COMPILED
@@ -444,6 +447,24 @@ alphabet_down:
 
 ALPHA_SELECT: .word 0
 
+draw_stack:
+	push {r8,lr}
+	ldr r8,STACKP
+	adrl r0,STACK
+	sub r8,r0
+	asr r8,#2
+
+	cmp r8,#0
+	popmi {r8,pc}; mov r0,#0xe00; add r0,#0x2a; ldr r1,STACK+1*4; bl drawnum; subs r8,#1
+	popmi {r8,pc}; mov r0,#0xd00; add r0,#0x2a; ldr r1,STACK+2*4; bl drawnum; subs r8,#1
+	popmi {r8,pc}; mov r0,#0xc00; add r0,#0x2a; ldr r1,STACK+3*4; bl drawnum; subs r8,#1
+	popmi {r8,pc}; mov r0,#0xb00; add r0,#0x2a; ldr r1,STACK+4*4; bl drawnum; subs r8,#1
+	popmi {r8,pc}; mov r0,#0xa00; add r0,#0x2a; ldr r1,STACK+5*4; bl drawnum; subs r8,#1
+	popmi {r8,pc}; mov r0,#0x900; add r0,#0x2a; ldr r1,STACK+6*4; bl drawnum; subs r8,#1
+	popmi {r8,pc}; mov r0,#0x800; add r0,#0x2a; ldr r1,STACK+7*4; bl drawnum; subs r8,#1
+	popmi {r8,pc}; mov r0,#0x700; add r0,#0x2a; ldr r1,STACK+7*4; bl drawnum; subs r8,#1
+
+	pop {r8,pc}
 
 topad:
 	push {lr}
@@ -1174,7 +1195,6 @@ drawnum:
 	ror r8,#28; and r1,r8,#0xf; add r1,#0x30; cmp r1,#0x3a; addge r1,#7; bl drawchar
 	ror r8,#28; and r1,r8,#0xf; add r1,#0x30; cmp r1,#0x3a; addge r1,#7; bl drawchar
 
-	mov r1,#0x20; bl drawchar
 	pop {r8,pc}
 
 
@@ -1254,7 +1274,34 @@ TS_Y0: .float -166.333333333
 # ---------------------------
 halt:	b halt
 
+forthinit:
+	adr r0,STACK
+	str r0,STACKP
+	bx lr
+
+# r0 is TOS
+# r1 is A register
+# r10 is data pool base
+# r11 is data stack register
+run:
+	push {r10,r11,lr}
+	adrl r10,NUMBERS
+	ldr r11,STACKP
+	ldr r0,[r11],#-4
+
+	bl COMPILED
+
+	str r0,[r11,#4]!
+	str r11,STACKP
+
+	bl draw_stack
+
+	pop {r10,r11,pc}
+
+
 PAD: .fill 16,2,0
+STACKP: .word 0
+STACK: .word 0,0,0,0,0,0,0,0
 
 .align 4
 FONT: .incbin "font.bin"
@@ -1265,7 +1312,6 @@ NAMES: .incbin "names.bin"
 
 COMPILED: .fill 1024,4,0
 NUMBERS: .fill 128,4,0
-STACK: .word 0,0,0,0,0,0,0,0
 
 
 .align 4
