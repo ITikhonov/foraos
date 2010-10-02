@@ -5,6 +5,14 @@
 # drawing
 # ts
 
+.macro Fload name
+	ldr r0,\name
+.endm
+
+.macro Fa
+	mov r0,r1
+.endm
+
 
 .section ".start", #alloc, #execinstr
 
@@ -61,8 +69,6 @@ tsup:
 	pop {pc}
 
 up_alphabet:
-	push {lr}
-
 	ldr r0,ALPHA_SELECT
 	uxth r1,r0,ror #16
 	uxth r0,r0
@@ -83,31 +89,20 @@ up_alphabet:
 
 	mov r0,#0xc00
 	mov r1,#0
-	bl drawname
 
+	push {lr}
+	bl drawname
 	pop {pc}
 
 .up_alphabet_off:
-	adrl r0,NAMES
-	ldr r1,[r0]
-	ldr r2,[r0,#4]
+	bl entersysforth
 
-	mov r3,#0x00000020
-	orr r3,#0x00002000
-	orr r3,#0x00200000
-	orr r3,#0x20000000
-	str r3,[r0]
-	str r3,[r0,#4]
+	Fload ALPHA_NAME
+	Fa
+	
 
-	ldr r3,ALPHA_NAME
-	add r0,r3,lsl #3
-	str r1,[r0]
-	str r2,[r0,#4]
-
-	mov r0,#0
-	str r0,ALPHABET_ON
-	bl drawall
-	pop {pc}
+	bl leavesysforth
+	pop {r8,r9,pc}
 
 ALPHA_NAME: .word 0
 
@@ -292,16 +287,43 @@ LOADNUM: .word 0xe59a0000
 
 DISPC_GFX_BA0: .word 0x48050480
 
-.tonum:
-	push {r8,r9,lr}
-	adrl r8,NAMES
-	add r8,r0,lsl #3
+.tonum: /* deprecated */
+	bx lr
 
-	ldr r0,[r8]
+isnum:
+	# 0x30...0x39 0x61...0x66
+	and r0,#0xff
+	cmp r0,#0x30; beq .isnum.ok
+	cmp r0,#0x31; beq .isnum.ok
+	cmp r0,#0x32; beq .isnum.ok
+	cmp r0,#0x33; beq .isnum.ok
+	cmp r0,#0x34; beq .isnum.ok
+	cmp r0,#0x35; beq .isnum.ok
+	cmp r0,#0x36; beq .isnum.ok
+	cmp r0,#0x37; beq .isnum.ok
+	cmp r0,#0x38; beq .isnum.ok
+	cmp r0,#0x39; beq .isnum.ok
+	cmp r0,#0x61; beq .isnum.ok
+	cmp r0,#0x62; beq .isnum.ok
+	cmp r0,#0x63; beq .isnum.ok
+	cmp r0,#0x64; beq .isnum.ok
+	cmp r0,#0x65; beq .isnum.ok
+	cmp r0,#0x66; beq .isnum.ok
+
+	movs r0,#1
+	bx lr
+.isnum.ok:
+	movs r0,#0
+	bx lr
+
+tonum:
+	push {r8,r9,lr}
+
+	mov r8,r1
 	bl .hextoh
 	mov r9,r0
 
-	ldr r0,[r8,#4]
+	mov r0,r8
 	bl .hextoh
 
 	pkhbt r0,r0,r9,lsl #16
@@ -1226,15 +1248,15 @@ drawnum:
 	ldr r5,DRAW_BG
 
 	mov r8,r1
-	ror r8,#28; and r1,r8,#0xf; add r1,#0x30; cmp r1,#0x3a; addge r1,#7; bl drawchar
-	ror r8,#28; and r1,r8,#0xf; add r1,#0x30; cmp r1,#0x3a; addge r1,#7; bl drawchar
-	ror r8,#28; and r1,r8,#0xf; add r1,#0x30; cmp r1,#0x3a; addge r1,#7; bl drawchar
-	ror r8,#28; and r1,r8,#0xf; add r1,#0x30; cmp r1,#0x3a; addge r1,#7; bl drawchar
+	ror r8,#28; and r1,r8,#0xf; add r1,#0x30; cmp r1,#0x3a; addge r1,#0x27; bl drawchar
+	ror r8,#28; and r1,r8,#0xf; add r1,#0x30; cmp r1,#0x3a; addge r1,#0x27; bl drawchar
+	ror r8,#28; and r1,r8,#0xf; add r1,#0x30; cmp r1,#0x3a; addge r1,#0x27; bl drawchar
+	ror r8,#28; and r1,r8,#0xf; add r1,#0x30; cmp r1,#0x3a; addge r1,#0x27; bl drawchar
 
-	ror r8,#28; and r1,r8,#0xf; add r1,#0x30; cmp r1,#0x3a; addge r1,#7; bl drawchar
-	ror r8,#28; and r1,r8,#0xf; add r1,#0x30; cmp r1,#0x3a; addge r1,#7; bl drawchar
-	ror r8,#28; and r1,r8,#0xf; add r1,#0x30; cmp r1,#0x3a; addge r1,#7; bl drawchar
-	ror r8,#28; and r1,r8,#0xf; add r1,#0x30; cmp r1,#0x3a; addge r1,#7; bl drawchar
+	ror r8,#28; and r1,r8,#0xf; add r1,#0x30; cmp r1,#0x3a; addge r1,#0x27; bl drawchar
+	ror r8,#28; and r1,r8,#0xf; add r1,#0x30; cmp r1,#0x3a; addge r1,#0x27; bl drawchar
+	ror r8,#28; and r1,r8,#0xf; add r1,#0x30; cmp r1,#0x3a; addge r1,#0x27; bl drawchar
+	ror r8,#28; and r1,r8,#0xf; add r1,#0x30; cmp r1,#0x3a; addge r1,#0x27; bl drawchar
 
 	pop {r8,pc}
 
@@ -1324,6 +1346,23 @@ forthinit:
 # r1 is A register
 # r10 is data pool base
 # r11 is data stack register
+
+SYSR10:.word 0
+SYSR11:.word 0
+
+entersysforth:
+	str r10,SYSR10
+	str r11,SYSR11
+	adrl r10,NUMBERS
+	adrl r11,SYSSTACK
+	bx lr
+
+leavesysforth:
+	ldr r10,SYSR10
+	ldr r11,SYSR11
+	bx lr
+	
+
 run:
 	push {r10,r11,lr}
 	adrl r10,NUMBERS
@@ -1343,6 +1382,8 @@ run:
 PAD: .fill 16,2,0
 STACKP: .word 0
 STACK: .word 0,0,0,0,0,0,0,0
+
+SYSSTACK: .word 0,0,0,0,0,0,0,0
 
 .align 4
 FONT: .incbin "font.bin"
