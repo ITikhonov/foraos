@@ -1164,6 +1164,9 @@ drawname:
 	ldr r4,DRAW_FG
 	ldr r5,DRAW_BG
 
+	tst r1,#0x8000
+	bne .drawname.num
+
 	adrl r8,NAMES
 	add r8,r1,lsl #3
 
@@ -1183,6 +1186,18 @@ drawname:
 	bl drawchar
 	bl drawchar
 
+	pop {r8,pc}
+
+.drawname.num:
+	adrl r8,NUMBERS
+	bic r1,#0x8000
+	ldr r1,[r8,r1,lsl #2]
+
+	bl drawnum
+
+	mov r1,#0x20
+	bl drawchar
+	bl drawchar
 	pop {r8,pc}
 
 drawpad:
@@ -1321,9 +1336,9 @@ FONT: .incbin "font.bin"
 FORTH: .incbin "code.bin"
 .align 4
 NAMES: .incbin "names.bin"
+NUMBERS: .incbin "numbers.bin"
 
 COMPILED: .fill 1024,4,0
-NUMBERS: .fill 128,4,0
 
 
 .align 4
