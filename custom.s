@@ -117,6 +117,9 @@ up_name:
 	mvn r0,#0
 	str r0,SELECT
 
+	mov r0,#8
+	bl redraw
+
 	pop {pc}
 
 .up_name.edit:
@@ -542,7 +545,7 @@ select:
 	bxhs lr
 
 	cmp r0,#8
-	moveq r2,#-1 /* separator */
+	moveq r2,#3 /* separator */
 	bxeq lr
 	movhs r2,#1 /* pad */
 	movlo r2,#2 /* names */
@@ -561,7 +564,16 @@ redraw:
 	b redraw_right
 	b redraw_pad
 	b redraw_name
+	b redraw_eight
 
+redraw_eight:
+	push {lr}
+	cmp r1,#0
+	popne {pc}
+	mov r0,#0x800
+	ldr r1,ALPHA_NAME
+	bl drawname
+	pop {pc}
 
 redraw_right:
 	push {lr}
