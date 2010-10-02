@@ -1,6 +1,6 @@
 map=(	"""\0###############"""
 	"""################"""
-	"""#!##############"""
+	"""#!########*+####"""
 	"""0123456789:;<=>?"""
 	"""@ABCDEFGHIJKLMNO"""
 	"""PQRSTUVWXYZ[\\]^_"""
@@ -26,7 +26,7 @@ right='atom exit save run'.split()
 # atoms -> name
 # defs
 
-atoms=['','NATIVE','NUMBER']+right
+atoms=['','NATIVE']+right
 numbers=[0]
 
 def atom(x):
