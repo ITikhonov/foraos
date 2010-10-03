@@ -36,7 +36,28 @@ realstart:
 
 DISPC_GFX_BA0: .word 0x48050480
 
+STACK: .word 0,0,0,0,0,0,0,0
+
 tsup:
+	push {r10,r11,lr}
+	bl ts_to_sc
+
+# r0 is TOS
+# r1 is A register
+# r10 is data pool base
+# r11 is data stack register
+
+	adrl r10,NUMBERS
+	adrl r11,STACK
+
+	adrl r3,COMPILED
+	add r3,#0x4c
+
+	blx r3
+
+	pop {r10,r11,pc}
+
+tsup_asm:
 	push {lr}
 	bl ts_to_sc
 	ldr r1,DISPC_GFX_BA0
@@ -398,7 +419,8 @@ FORTH: .incbin "code.bin"
 NAMES: .incbin "names.bin"
 NUMBERS: .incbin "numbers.bin"
 
-COMPILED: .fill 1024,4,0
+ADDR: .incbin "addr.bin"
+COMPILED: .incbin "compiled.bin"
 
 
 .align 4

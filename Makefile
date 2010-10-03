@@ -9,7 +9,7 @@ custom.bin: custom
 custom: custom.o
 	bin/ld -o custom custom.o
 
-custom.o: font.bin code.bin names.bin
+custom.o: font.bin code.bin names.bin compiled.bin
 
 code.bin: code.fth compile.py
 	python ./compile.py
@@ -34,3 +34,12 @@ font.bin: font.gray refont
 sample.txt: sample.o
 	bin/objdump -D sample.o > sample.txt
 	cat sample.txt
+
+compiled.bin: code.bin codegen.py
+	python codegen.py
+	$(AS) -o compiled.o empty.s
+	bin/objcopy --add-section raw=compiled.bin compiled.o
+	bin/objdump -D compiled.o
+
+
+

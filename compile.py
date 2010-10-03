@@ -26,7 +26,7 @@ right='atom exit save run'.split()
 # atoms -> name
 # defs
 
-atoms=['','NATIVE']+right
+atoms=['','NATIVE']+right+['INIT','UP','DOWN']
 numbers=[0]
 
 def atom(x):
