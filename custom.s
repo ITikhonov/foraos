@@ -50,8 +50,11 @@ tsup:
 	adrl r10,NUMBERS
 	adrl r11,STACK
 
+	adrl r2,ADDR
+	ldr r2,[r2,#7*4]
+
 	adrl r3,COMPILED
-	add r3,#0x4c
+	add r3,r2,lsl#2
 
 	blx r3
 
