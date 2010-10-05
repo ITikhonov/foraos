@@ -20,13 +20,15 @@ words=[x for x in words if x!=[]]
 
 print words
 
-right='atom exit save run'.split()
+right='atom exit save run page0 page1 page2 page3'.split()
 
 # three tables:
 # atoms -> name
 # defs
 
 atoms=['','NATIVE','COND','']+right+['INIT','UP','DOWN']
+atoms.extend([None]*(128-len(atoms)))
+
 numbers=[0]
 
 def atom(x):
@@ -37,13 +39,19 @@ def atom(x):
 		return 0x8000+numbers.index(n)
 
 	if x not in atoms:
-		atoms.append(x)
+		atoms[atoms.index(None)]=x
 	return atoms.index(x)
 
 defs={}
 
 for x in words:
 	defs[atom(x[0])]=[atom(y) for y in x[1:]]
+
+def replace_None(x):
+	if x is None: return ''
+	return x
+
+atoms=[replace_None(x) for x in atoms]
 
 print atoms
 print numbers
