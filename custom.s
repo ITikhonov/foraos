@@ -16,7 +16,7 @@
 	adrl r11,STACK
 
 	adrl r2,ADDR
-	ldr r2,[r2,#\n*4]
+	ldr r2,[r2,#(\n+8)*4]
 
 	adrl r3,COMPILED
 	add r3,r2,lsl#2
@@ -51,6 +51,8 @@ realstart:
 	bl spiinit
 	bl tsinit
 
+	FCALL 0
+
 .rs.loop:
 	bl touchscreen
 	b .rs.loop
@@ -63,29 +65,13 @@ STACK: .word 0,0,0,0,0,0,0,0
 tsup:
 	push {lr}
 	bl ts_to_sc
-	FCALL 7
-	pop {pc}
-
-tsup_asm:
-	push {lr}
-	bl ts_to_sc
-	ldr r1,DISPC_GFX_BA0
-	ldr r1,[r1]
-	uxth r2,r0
-	mov r3,#800*4
-	mla r1,r3,r2,r1
-
-	uxth r2,r0,ror#16
-	add r1,r2,lsl#2
-
-	mvn r0,#0
-	str r0,[r1]
-	
+	FCALL 1
 	pop {pc}
 
 tsdown:
 	push {lr}
 	bl ts_to_sc
+	FCALL 2
 	pop {pc}
 
 /* 
@@ -421,12 +407,13 @@ TS_X0: .float -107.459459459
 TS_Y0: .float -166.333333333
 
 .align 4
+NUMBERS: .incbin "numbers.bin"
+.align 4
 FONT: .incbin "font.bin"
 .align 4
 FORTH: .incbin "code.bin"
 .align 4
 NAMES: .incbin "names.bin"
-NUMBERS: .incbin "numbers.bin"
 
 ADDR: .incbin "addr.bin"
 COMPILED: .incbin "compiled.bin"

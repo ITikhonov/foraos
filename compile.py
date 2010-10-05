@@ -26,13 +26,13 @@ right='atom exit save run'.split()
 # atoms -> name
 # defs
 
-atoms=['','NATIVE']+right+['INIT','UP','DOWN']
+atoms=['','NATIVE','COND','']+right+['INIT','UP','DOWN']
 numbers=[0]
 
 def atom(x):
 	n=number(x)
-	if n:
-		if n in numbers: return numbers.index(n)
+	if n!=None:
+		if n in numbers: return 0x8000+numbers.index(n)
 		numbers.append(n)
 		return 0x8000+numbers.index(n)
 
@@ -58,7 +58,7 @@ def u32(x):
 f=open('names.bin','w')
 for x in atoms:
 	s=''.join([chr(map.index(y)) for y in x])+'\x20'*(8-len(x))
-	assert len(s)==8
+	assert len(s)==8,s
 	f.write(s)
 assert f.tell()<=1024
 f.write('\x20'*(1024-f.tell()))
@@ -80,10 +80,4 @@ for x in numbers:
 	f.write(u32(x))
 f.write('\0'*(512-f.tell()))
 f.close()
-
-
-
-
-
-
 

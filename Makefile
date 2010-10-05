@@ -39,7 +39,7 @@ compiled.bin: code.bin codegen.py
 	python codegen.py
 	$(AS) -o compiled.o empty.s
 	bin/objcopy --add-section raw=compiled.bin compiled.o
-	bin/objdump -D compiled.o
+	bin/objdump -D compiled.o > compiled.txt
 
 
 
