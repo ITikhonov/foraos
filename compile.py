@@ -26,7 +26,7 @@ right='atom exit save run page0 page1 page2 page3'.split()
 # atoms -> name
 # defs
 
-atoms=['','NATIVE','COND','']+right+['INIT','UP','DOWN']
+atoms=['','NATIVE','COND','VAR']+right+['INIT','UP','DOWN']
 atoms.extend([None]*(128-len(atoms)))
 
 numbers=[0]
@@ -45,7 +45,11 @@ def atom(x):
 defs={}
 
 for x in words:
-	defs[atom(x[0])]=[atom(y) for y in x[1:]]
+	d=[atom(y) for y in x[1:]]
+	defs[atom(x[0])]=d
+	if d[0]==3:
+		numbers.append(numbers[d[1]^0x8000])
+		d[1]=0x8000|(len(numbers)-1)
 
 def replace_None(x):
 	if x is None: return ''
@@ -75,7 +79,14 @@ f.close()
 
 f=open('code.bin','w')
 for x in atoms:
-	d=[u16(y) for y in defs.get(atom(x),[])]
+	d=defs.get(atom(x))
+	if d:
+		d=[u16(y) for y in d]
+	else:
+		if x and atom(x)>0xb:
+			print 'NO DEFINITION FOR "%x: %s"'%(atom(x),x)
+			assert False,x
+		d=[]
 	s=''.join(d)
 	assert len(s)<=32
 	s=s+'\0'*(32-len(s))

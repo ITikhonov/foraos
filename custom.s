@@ -60,7 +60,7 @@ realstart:
 
 DISPC_GFX_BA0: .word 0x48050480
 
-STACK: .word 0,0,0,0,0,0,0,0
+STACK: .word 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
 
 tsup:
 	push {lr}

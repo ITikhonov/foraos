@@ -36,7 +36,7 @@ code=[]
 CONDAL=0xe0000000
 
 def condify(cond,s):
-	if not cond: return s
+	if cond is None: return s
 	return [cond|(x&0x0fffffff) for x in s]
 
 def c(x):
@@ -58,6 +58,9 @@ def c(x):
 				cond=None
 			elif forth[y][0]==2:
 				cond=inline(forth[y][1])
+			elif forth[y][0]==3:
+				code.extend(condify(cond,[DUP,0xe28a0f00|(forth[y][1]^0x8000)]))
+				cond=None
 			else:
 				backref[y][1].append(len(code))
 				code.extend(condify(cond,[0xeb000000]))
@@ -76,11 +79,11 @@ for i,x in backref:
 		d=(addr[i]-y)-2
 		code[y]|=d&0xffffff
 
-for x in code: print hex(x),
+for (i,x) in zip(range(len(numbers)),numbers): print hex(i),hex(x)
 
 for n,f,x in zip(names,forth,addr):
 	if n=='        ': continue
-	print names.index(n),n,f,hex(x*4)
+	print names.index(n),n,' '.join([hex(z)[2:] for z in f]),hex(x*4)
 
 
 from struct import pack
