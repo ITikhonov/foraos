@@ -62,6 +62,7 @@ for x in atoms:
 	f.write(s)
 assert f.tell()<=1024
 f.write('\x20'*(1024-f.tell()))
+assert f.tell()==1024
 f.close()
 
 f=open('code.bin','w')
@@ -73,11 +74,13 @@ for x in atoms:
 	print x,repr(s)
 	f.write(s)
 f.write('\0'*(4096-f.tell()))
+assert f.tell()==4096
 f.close()
 
 f=open('numbers.bin','w')
 for x in numbers:
 	f.write(u32(x))
 f.write('\0'*(512-f.tell()))
+assert f.tell()==512
 f.close()
 
