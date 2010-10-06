@@ -88,7 +88,7 @@ for x in atoms:
 			assert False,x
 		d=[]
 	s=''.join(d)
-	assert len(s)<=32
+	assert len(s)<=32,x
 	s=s+'\0'*(32-len(s))
 	print x,repr(s)
 	f.write(s)
