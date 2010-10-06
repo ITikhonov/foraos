@@ -16,7 +16,7 @@
 	adrl r11,STACK
 
 	adrl r2,ADDR
-	ldr r2,[r2,#(\n+12)*4]
+	ldr r2,[r2,#(\n+13)*4]
 
 	adrl r3,COMPILED
 	add r3,r2,lsl#2

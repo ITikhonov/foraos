@@ -26,7 +26,7 @@ right='ATOM EXIT SAVE RUN PAGE0 PAGE1 PAGE2 PAGE3'.split()
 # atoms -> name
 # defs
 
-atoms=['','NATIVE','COND','VAR']+right+['INIT','UP','DOWN']
+atoms=['','NATIVE','COND','VAR']+right+[':','INIT','UP','DOWN']
 atoms.extend([None]*(128-len(atoms)))
 
 numbers=[0]
@@ -83,7 +83,7 @@ for x in atoms:
 	if d:
 		d=[u16(y) for y in d]
 	else:
-		if x and atom(x)>0xb:
+		if x and atom(x)>0xc:
 			print 'NO DEFINITION FOR "%x: %s"'%(atom(x),x)
 			assert False,x
 		d=[]
