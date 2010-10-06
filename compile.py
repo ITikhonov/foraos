@@ -20,7 +20,7 @@ words=[x for x in words if x!=[]]
 
 print words
 
-right='atom exit save run page0 page1 page2 page3'.split()
+right='ATOM EXIT SAVE RUN PAGE0 PAGE1 PAGE2 PAGE3'.split()
 
 # three tables:
 # atoms -> name
