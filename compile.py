@@ -27,6 +27,16 @@ print predef
 print words
 
 
+def names():
+        names=[]
+        r=open('code.dict').read()[0x3200:]
+        for i in range(0,1024,8):
+                names.append(r[i:i+8])
+        return names
+
+if not predef:
+	corenames=names()
+
 # three tables:
 # atoms -> name
 # defs
@@ -35,8 +45,12 @@ atoms=predef
 atoms.extend([None]*(128-len(atoms)))
 
 numbers=[0]
+extern=[]
 
 def atom(x):
+	if '\\' in x:
+		if x not in extern: extern.append(x)
+		return 0x4000+extern.index(x)
 	n=number(x)
 	if n!=None:
 		if n in numbers: return 0x8000+numbers.index(n)
@@ -88,11 +102,21 @@ assert f.tell()==1024
 names_bin=f.getvalue()
 f.close()
 
+
+linkage=[]
 f=StringIO()
 for x in atoms:
 	d=defs.get(atom(x))
 	if d:
-		d=[u16(y) for y in d]
+		d2=[]
+		for i in range(len(d)):
+			y=d[i]
+			if y&0x4000:
+				d2.append('\xff\xff')
+				linkage.append((extern[(y^0x4000)],f.tell()+i*2))
+			else:
+				d2.append(u16(y))
+		d=d2
 	else:
 		if x and atom(x)>=0x18:
 			print 'NO DEFINITION FOR "%x: %s"'%(atom(x),x)
@@ -118,7 +142,8 @@ f.close()
 
 font_bin=open('font.bin').read()
 
-name=argv[1].rsplit('.',1)[0]+'.dict'
-open(name,'w').write(numbers_bin+font_bin+code_bin+names_bin)
+name=argv[1].rsplit('.',1)[0]
+open(name+'.dict','w').write(numbers_bin+font_bin+code_bin+names_bin)
 
+open(name+'.link','w').write(repr(linkage))
 
