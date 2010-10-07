@@ -12,7 +12,7 @@
 # r10 is data pool base
 # r11 is data stack register
 
-	adrl r10,NUMBERS
+	adrl r10,DICT
 	adrl r11,STACK
 
 	adrl r2,ADDR
@@ -407,13 +407,7 @@ TS_X0: .float -107.459459459
 TS_Y0: .float -166.333333333
 
 .align 4
-NUMBERS: .incbin "numbers.bin"
-.align 4
-FONT: .incbin "font.bin"
-.align 4
-FORTH: .incbin "code.bin"
-.align 4
-NAMES: .incbin "names.bin"
+DICT: .incbin "code.dict"
 
 ADDR: .incbin "addr.bin"
 COMPILED: .incbin "compiled.bin"

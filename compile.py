@@ -14,19 +14,23 @@ def number(s):
 		return int(s,0x10)
 	return None
 
+from sys import argv
 
-words=[x.split() for x in open('code.fth').read().split('\n')]
+words=[x.split() for x in open(argv[1]).read().split('\n')]
 words=[x for x in words if x!=[]]
 
+if words[0][0]=='PREDEFINED':
+	predef=[x[1:-1] for x in words.pop(0)[1:]]
+
+print predef
 print words
 
-right='ATOM EXIT SAVE RUN PAGE0 PAGE1 PAGE2 PAGE3'.split()
 
 # three tables:
 # atoms -> name
 # defs
 
-atoms=['','NATIVE','COND','VAR']+right+[':','INIT','UP','DOWN']
+atoms=predef
 atoms.extend([None]*(128-len(atoms)))
 
 numbers=[0]
@@ -67,7 +71,8 @@ def u16(x):
 def u32(x):
 	return chr(x&0xff)+chr((x>>8)&0xff)+chr((x>>16)&0xff)+chr((x>>24)&0xff)
 
-f=open('names.bin','w')
+from cStringIO import StringIO
+f=StringIO()
 for x in atoms:
 	s=''.join([chr(map.index(y)) for y in x])+'\x20'*(8-len(x))
 	assert len(s)==8,s
@@ -75,9 +80,10 @@ for x in atoms:
 assert f.tell()<=1024
 f.write('\x20'*(1024-f.tell()))
 assert f.tell()==1024
+names_bin=f.getvalue()
 f.close()
 
-f=open('code.bin','w')
+f=StringIO()
 for x in atoms:
 	d=defs.get(atom(x))
 	if d:
@@ -94,12 +100,20 @@ for x in atoms:
 	f.write(s)
 f.write('\0'*(4096-f.tell()))
 assert f.tell()==4096
+code_bin=f.getvalue()
 f.close()
 
-f=open('numbers.bin','w')
+f=StringIO()
 for x in numbers:
 	f.write(u32(x))
 f.write('\0'*(512-f.tell()))
 assert f.tell()==512
+numbers_bin=f.getvalue()
 f.close()
+
+font_bin=open('font.bin').read()
+
+name=argv[1].rsplit('.',1)[0]+'.dict'
+open(name,'w').write(numbers_bin+font_bin+code_bin+names_bin)
+
 

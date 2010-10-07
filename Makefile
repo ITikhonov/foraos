@@ -9,10 +9,10 @@ custom.bin: custom
 custom: custom.o
 	bin/ld -o custom custom.o
 
-custom.o: font.bin code.bin names.bin compiled.bin
+custom.o: code.dict compiled.bin
 
-code.bin: code.fth compile.py
-	python ./compile.py
+code.dict: code.fth compile.py font.bin
+	python ./compile.py code.fth
 
 code.fth: sample.txt
 
@@ -35,7 +35,7 @@ sample.txt: sample.o
 	bin/objdump -D sample.o > sample.txt
 	cat sample.txt
 
-compiled.bin: code.bin codegen.py
+compiled.bin: code.dict codegen.py
 	python codegen.py
 	$(AS) -o compiled.o empty.s
 	bin/objcopy --add-section raw=compiled.bin compiled.o

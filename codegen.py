@@ -6,19 +6,19 @@ DUP=0xe5ab0004
 def load():
 	forth=[]
 	numbers=[]
-	r=open('code.bin').read()
+	r=open('code.dict').read()[0x2200:]
 	from struct import unpack
 	for o in range(0,4096,32):
 		forth.append(unpack('HHHH HHHH HHHH HHHH',r[o:o+32]))
 
-	r=open('numbers.bin').read()
+	r=open('code.dict').read()
 	for o in range(0,512,4):
 		numbers.append(unpack('I',r[o:o+4])[0])
 	return forth,numbers
 
 def names():
 	names=[]
-	r=open('names.bin').read()
+	r=open('code.dict').read()[0x3200:]
 	for i in range(0,1024,8):
 		names.append(r[i:i+8])
 	return names
@@ -122,7 +122,7 @@ for i,x in backref:
 		d=(addr[i]-y)-2
 		code[y]|=d&0xffffff
 
-for (i,x) in zip(range(len(numbers)),numbers): print hex(i),hex(x)
+#for (i,x) in zip(range(len(numbers)),numbers): print hex(i),hex(x)
 
 for n,f,x in zip(names,forth,addr):
 	if n=='        ': continue
