@@ -14,7 +14,7 @@ custom.o: core.dict compiled.bin
 core.dict: core.fth compile.py font.bin
 	python ./compile.py core.fth
 
-ui.dict: core.fth compile.py font.bin
+ui.dict: ui.fth compile.py font.bin
 	python ./compile.py ui.fth
 
 linked: core.dict ui.dict core.link ui.link

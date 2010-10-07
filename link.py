@@ -16,8 +16,6 @@ for x in argv[1:]:
 	link=eval(open(x+'.link').read())
 	f=open(x+'.dict','r+')
 	for ((d,n),o) in link:
-		f.seek(0x2200+o)
-		assert f.read(2)=='\xff\xff', (d,n,o)
 
 		try: didx=argv.index(d.lower())
 		except:
@@ -30,8 +28,11 @@ for x in argv[1:]:
 			print 'no %s in %s (from %s)\n'%(n,d,x)
 			exit(1)
 
+		fix=chr(nidx)+chr(didx)
 		f.seek(0x2200+o)
-		f.write(chr(nidx)+chr(didx))
+		#assert f.read(2) == '\xff\xff', (d,n,o)
+		f.seek(0x2200+o)
+		f.write(fix)
 		print d,n,'=>',didx,nidx
 
 

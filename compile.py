@@ -95,6 +95,7 @@ f.close()
 linkage=[]
 f=StringIO()
 for x in atoms:
+	print hex(f.tell()+0x2200),x
 	d=defs.get(atom(x))
 	if d:
 		d2=[]
