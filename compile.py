@@ -26,17 +26,6 @@ while words[0][0]=='PREDEFINED':
 print predef
 print words
 
-
-def names():
-        names=[]
-        r=open('code.dict').read()[0x3200:]
-        for i in range(0,1024,8):
-                names.append(r[i:i+8])
-        return names
-
-if not predef:
-	corenames=names()
-
 # three tables:
 # atoms -> name
 # defs
@@ -113,19 +102,20 @@ for x in atoms:
 			y=d[i]
 			if y&0x4000:
 				d2.append('\xff\xff')
-				linkage.append((extern[(y^0x4000)],f.tell()+i*2))
+				linkage.append((extern[(y^0x4000)].split('\\'),f.tell()+i*2))
+			elif (y&0x8000)==0 and defs.get(y) is None:
+				d2.append('\xff\xff')
+				linkage.append((('CORE',atoms[y]),f.tell()+i*2))
 			else:
 				d2.append(u16(y))
 		d=d2
 	else:
-		if x and atom(x)>=0x18:
+		if x!='':
 			print 'NO DEFINITION FOR "%x: %s"'%(atom(x),x)
-			#assert False,x
 		d=[]
 	s=''.join(d)
 	assert len(s)<=32,x
 	s=s+'\0'*(32-len(s))
-	print x,repr(s)
 	f.write(s)
 f.write('\0'*(4096-f.tell()))
 assert f.tell()==4096
