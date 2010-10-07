@@ -19,8 +19,9 @@ from sys import argv
 words=[x.split() for x in open(argv[1]).read().split('\n')]
 words=[x for x in words if x!=[]]
 
-if words[0][0]=='PREDEFINED':
-	predef=[x[1:-1] for x in words.pop(0)[1:]]
+predef=[]
+while words[0][0]=='PREDEFINED':
+	predef.extend([x[1:-1] for x in words.pop(0)[1:]])
 
 print predef
 print words
@@ -74,7 +75,11 @@ def u32(x):
 from cStringIO import StringIO
 f=StringIO()
 for x in atoms:
-	s=''.join([chr(map.index(y)) for y in x])+'\x20'*(8-len(x))
+	try:
+		s=''.join([chr(map.index(y)) for y in x])+'\x20'*(8-len(x))
+	except:
+		print "'%s'"%(x,)
+		raise
 	assert len(s)==8,s
 	f.write(s)
 assert f.tell()<=1024
@@ -89,9 +94,9 @@ for x in atoms:
 	if d:
 		d=[u16(y) for y in d]
 	else:
-		if x and atom(x)>0xc:
+		if x and atom(x)>=0x18:
 			print 'NO DEFINITION FOR "%x: %s"'%(atom(x),x)
-			assert False,x
+			#assert False,x
 		d=[]
 	s=''.join(d)
 	assert len(s)<=32,x
