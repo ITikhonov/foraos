@@ -36,7 +36,7 @@ sample.txt: sample.o
 	cat sample.txt
 
 compiled.bin: core.dict codegen.py
-	python codegen.py
+	python codegen.py core.dict ui.dict
 	$(AS) -o compiled.o empty.s
 	bin/objcopy --add-section raw=compiled.bin compiled.o
 	bin/objdump -D compiled.o > compiled.txt

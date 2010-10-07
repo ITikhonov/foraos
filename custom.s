@@ -16,7 +16,7 @@
 	adrl r11,STACK
 
 	adrl r2,ADDR
-	ldr r2,[r2,#(\n+13)*4]
+	ldr r2,[r2,#(\n+0x10)*4]
 
 	adrl r3,COMPILED
 	add r3,r2,lsl#2
@@ -407,7 +407,8 @@ TS_X0: .float -107.459459459
 TS_Y0: .float -166.333333333
 
 .align 4
-DICT: .incbin "code.dict"
+DICT:	.incbin "core.dict"
+	.incbin "ui.dict"
 
 ADDR: .incbin "addr.bin"
 COMPILED: .incbin "compiled.bin"

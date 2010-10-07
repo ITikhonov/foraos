@@ -3,32 +3,32 @@ PUSHLR=0xe92d4000
 POPPC=0xe8bd8000
 DUP=0xe5ab0004
 
-def load():
+def load(x):
 	forth=[]
 	numbers=[]
-	r=open('code.dict').read()[0x2200:]
+	r=open(x).read()[0x2200:]
 	from struct import unpack
 	for o in range(0,4096,32):
 		forth.append(unpack('HHHH HHHH HHHH HHHH',r[o:o+32]))
 
-	r=open('code.dict').read()
+	r=open(x).read()
 	for o in range(0,512,4):
 		numbers.append(unpack('I',r[o:o+4])[0])
 	return forth,numbers
 
-def names():
+def loadnames(x):
 	names=[]
-	r=open('code.dict').read()[0x3200:]
+	r=open(x).read()[0x3200:]
 	for i in range(0,1024,8):
 		names.append(r[i:i+8])
 	return names
 
-def inline(y):
+def inline(y,forth,numbers):
 	if y&0x8000: return numbers[y^0x8000]
 
-	return inline(forth[y][1])
+	return inline(forth[y][1],forth,numbers)
 
-backref=a=[(x,[]) for x in range(0,128)]
+backref={}
 
 addr=[]
 code=[]
@@ -42,22 +42,35 @@ def condify(cond,s):
 troubles=[]
 
 
-def c1(cond,y):
+def c1(cond,y,forth,numbers,dictn,locals):
 	if y==0: return (None,[])
 	r=[]
+
+	if y&0x7f00:
+		idx=(y>>8)-1
+		forth=_forth[idx]
+		numbers=_numbers[idx]
+		y=y&0xff
+		ry=(idx,y)
+	elif (y&0x8000)==0:
+		ry=(dictn-1,y)
+
 	if y&0x8000:
-		r=condify(cond,[DUP,0xe59a0000|((y^0x8000)*4)])
+		print 'NUMBER!'
+		r=condify(cond,[DUP,0xe59f0000])
+		locals.append((len(code),numbers[y^0x8000]))
 		cond=None
 	elif forth[y][0]==1:
-		r=condify(cond,[inline(z) for z in forth[y][1:] if z!=0])
+		r=condify(cond,[inline(z,forth,numbers) for z in forth[y][1:] if z!=0])
 		cond=None
 	elif forth[y][0]==2:
-		cond=inline(forth[y][1])
+		cond=inline(forth[y][1],forth,numbers)
 	elif forth[y][0]==3:
 		r=condify(cond,[DUP,0xe28a0f00|(forth[y][1]^0x8000)])
 		cond=None
 	else:
-		backref[y][1].append(len(code))
+		if ry not in backref: backref[ry]=[]
+		backref[ry].append(len(code))
 		r=condify(cond,[0xeb000000])
 		cond=None
 	return (cond,r)
@@ -76,11 +89,17 @@ def c1(cond,y):
   c4:	00000002 	andeq	r0, r0, r2
 """
 
-def c(x,name):
+def c(x,name,forth,numbers,dictn):
+	print name
 	addr.append(len(code))
 	code.append(PUSHLR)
+	locals=[]
 	if x[0]==1:
-		code.extend([inline(z) for z in x[1:] if z!=0])
+		code.extend([inline(z,forth,numbers) for z in x[1:] if z!=0])
+	elif x[0]==2:
+		pass
+	elif x[0]==3:
+		pass
 	else:
 		cond=None
 		c=[]
@@ -88,13 +107,14 @@ def c(x,name):
 		while i<len(x):
 			y=x[i]
 			if y==12:
+				assert False,'Probably 12 from wrong dict'
 				F1=len(code)
 				code.extend(condify(cond,[0xea000000]))
-				(_cond,B)=c1(None,x[i+2])
+				(_cond,B)=c1(None,x[i+2],forth,numbers,dictn,locals)
 				code.extend(B)
 				F2=len(code)
 				code.extend([0xea000000])
-				(_cond,A)=c1(None,x[i+1])
+				(_cond,A)=c1(None,x[i+1],forth,numbers,dictn,locals)
 				code.extend(A)
 
 				code[F1]|=len(B)
@@ -104,38 +124,60 @@ def c(x,name):
 				i+=3
 				continue
 
-			(cond,r)=c1(cond,y)
+			(cond,r)=c1(cond,y,forth,numbers,dictn,locals)
 			code.extend(r)
 			i+=1
 
 	code.append(POPPC)
 
+	for (o,n) in locals:
+		ns=code[o+1]
+		assert 0x059f0000 == ns&0x0fffffff 
 
-names=names()
-forth,numbers=load()
+		code[o+1]|=(len(code)-o-1)*4-8
+		code.append(n)
+		print hex(n)
 
-for n,x in zip(names,forth):
-	c(x,n)
 
-for i,x in backref:
+def all():
+	global _names,_forth,_numbers
+	from sys import argv
+	names=[]
+	forth=[]
+	numbers=[]
+	dicts=[]
+
+	for x in argv[1:]:
+		u=x.upper()
+		dicts.append(u)
+		names.append(loadnames(x))
+		f,n=load(x)
+		forth.append(f)
+		numbers.append(n)
+
+	_forth=forth
+	_numbers=numbers
+	_names=names
+
+	for nam,f,nn,n0,dn in zip(dicts,forth,names,numbers,range(len(dicts))):
+		for n,x in zip(nn,f):
+			c(x,n,f,n0,dn+1)
+		print  nam,len(code)
+
+all()
+
+
+for (di,i),x in backref.items():
 	for y in x:
-		d=(addr[i]-y)-2
+		d=(addr[i+128*di]-y)-2
 		code[y]|=d&0xffffff
 
-#for (i,x) in zip(range(len(numbers)),numbers): print hex(i),hex(x)
-
-for n,f,x in zip(names,forth,addr):
-	if n=='        ': continue
-	print hex(names.index(n))[2:],n,' '.join([hex(z)[2:] for z in f]),hex(x*4)
-
+for i in range(len(addr)):
+	d=i>>7
+	n=i&0x7f
+	print hex(i),_names[d][n],hex(addr[i]*4)
 
 from struct import pack
 open('compiled.bin','w').write(''.join([pack('I',x) for x in code]))
 open('addr.bin','w').write(''.join([pack('I',x) for x in addr]))
 
-if troubles:
-	print
-	print '!!!!'
-	print '!!!! MORE THEN ONE COND, EXPECT TROUBLES in',' '.join(troubles)
-	print '!!!!'
-	print
