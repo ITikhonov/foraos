@@ -14,6 +14,13 @@ custom.o: core.dict compiled.bin
 core.dict: core.fth compile.py font.bin
 	python ./compile.py core.fth
 
+ui.dict: core.fth compile.py font.bin
+	python ./compile.py ui.fth
+
+linked: core.dict ui.dict core.link ui.link
+	python link.py core ui
+	touch linked
+
 core.fth: sample.txt
 
 install: all
@@ -35,7 +42,7 @@ sample.txt: sample.o
 	bin/objdump -D sample.o > sample.txt
 	cat sample.txt
 
-compiled.bin: core.dict codegen.py
+compiled.bin: codegen.py linked
 	python codegen.py core.dict ui.dict
 	$(AS) -o compiled.o empty.s
 	bin/objcopy --add-section raw=compiled.bin compiled.o

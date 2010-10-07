@@ -17,7 +17,7 @@ for x in argv[1:]:
 	f=open(x+'.dict','r+')
 	for ((d,n),o) in link:
 		f.seek(0x2200+o)
-		assert f.read(2)=='\xff\xff'
+		assert f.read(2)=='\xff\xff', (d,n,o)
 
 		try: didx=argv.index(d.lower())
 		except:

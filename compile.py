@@ -115,7 +115,7 @@ for x in atoms:
 		d=[]
 	s=''.join(d)
 	assert len(s)<=32,x
-	s=s+'\0'*(32-len(s))
+	s=s+'\x00\x01'*((32-len(s))/2)
 	f.write(s)
 f.write('\0'*(4096-f.tell()))
 assert f.tell()==4096

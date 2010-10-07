@@ -23,10 +23,9 @@ def loadnames(x):
 		names.append(r[i:i+8])
 	return names
 
-def inline(y,forth,numbers):
-	if y&0x8000: return numbers[y^0x8000]
-
-	return inline(forth[y][1],forth,numbers)
+def inline(y):
+	if y&0x8000: return _numbers[y^0x8000]
+	return inline(_forth[y][1])
 
 backref={}
 
@@ -41,36 +40,22 @@ def condify(cond,s):
 
 troubles=[]
 
-
-def c1(cond,y,forth,numbers,dictn,locals):
+def c1(cond,y,locals):
 	if y==0: return (None,[])
 	r=[]
 
-	if y&0x7f00:
-		idx=(y>>8)-1
-		forth=_forth[idx]
-		numbers=_numbers[idx]
-		y=y&0xff
-		ry=(idx,y)
-	elif (y&0x8000)==0:
-		ry=(dictn-1,y)
-
 	if y&0x8000:
-		print 'NUMBER!'
 		r=condify(cond,[DUP,0xe59f0000])
-		locals.append((len(code),numbers[y^0x8000]))
+		locals.append((len(code),_numbers[y^0x8000]))
 		cond=None
-	elif forth[y][0]==1:
-		r=condify(cond,[inline(z,forth,numbers) for z in forth[y][1:] if z!=0])
+	elif _forth[y][0]==1:
+		r=condify(cond,[inline(z) for z in _forth[y][1:] if z!=0])
 		cond=None
-	elif forth[y][0]==2:
-		cond=inline(forth[y][1],forth,numbers)
-	elif forth[y][0]==3:
-		r=condify(cond,[DUP,0xe28a0f00|(forth[y][1]^0x8000)])
-		cond=None
+	elif _forth[y][0]==2:
+		cond=inline(_forth[y][1])
 	else:
-		if ry not in backref: backref[ry]=[]
-		backref[ry].append(len(code))
+		if y not in backref: backref[y]=[]
+		backref[y].append(len(code))
 		r=condify(cond,[0xeb000000])
 		cond=None
 	return (cond,r)
@@ -89,32 +74,31 @@ def c1(cond,y,forth,numbers,dictn,locals):
   c4:	00000002 	andeq	r0, r0, r2
 """
 
-def c(x,name,forth,numbers,dictn):
-	print name
+def c(x,name):
+	print name,' '.join([hex(y)[2:] for y in x])
 	addr.append(len(code))
 	code.append(PUSHLR)
 	locals=[]
 	if x[0]==1:
-		code.extend([inline(z,forth,numbers) for z in x[1:] if z!=0])
+		code.extend([inline(z) for z in x[1:] if z!=0])
 	elif x[0]==2:
 		pass
 	elif x[0]==3:
-		pass
+		code.extend([DUP,0xe28f0000,POPPC,_numbers[x[1]^0x8000]])
 	else:
 		cond=None
 		c=[]
 		i=0
 		while i<len(x):
 			y=x[i]
-			if y==12:
-				assert False,'Probably 12 from wrong dict'
+			if y==4:
 				F1=len(code)
 				code.extend(condify(cond,[0xea000000]))
-				(_cond,B)=c1(None,x[i+2],forth,numbers,dictn,locals)
+				(_cond,B)=c1(None,x[i+2],locals)
 				code.extend(B)
 				F2=len(code)
 				code.extend([0xea000000])
-				(_cond,A)=c1(None,x[i+1],forth,numbers,dictn,locals)
+				(_cond,A)=c1(None,x[i+1],locals)
 				code.extend(A)
 
 				code[F1]|=len(B)
@@ -124,7 +108,7 @@ def c(x,name,forth,numbers,dictn):
 				i+=3
 				continue
 
-			(cond,r)=c1(cond,y,forth,numbers,dictn,locals)
+			(cond,r)=c1(cond,y,locals)
 			code.extend(r)
 			i+=1
 
@@ -138,6 +122,16 @@ def c(x,name,forth,numbers,dictn):
 		code.append(n)
 		print hex(n)
 
+def norm0(x,n):
+	if (x&0x7f00)!=0:
+		return (x&0xff)+((x>>8)-1)*128
+	return x+n*128
+
+def norm1(f,n):
+	return [norm0(x,n) for x in f]
+
+def normalize(f,n):
+	return [norm1(x,n) for x in f]
 
 def all():
 	global _names,_forth,_numbers
@@ -152,30 +146,28 @@ def all():
 		dicts.append(u)
 		names.append(loadnames(x))
 		f,n=load(x)
-		forth.append(f)
+		forth.append(normalize(f,len(forth)))
 		numbers.append(n)
 
-	_forth=forth
-	_numbers=numbers
-	_names=names
 
-	for nam,f,nn,n0,dn in zip(dicts,forth,names,numbers,range(len(dicts))):
-		for n,x in zip(nn,f):
-			c(x,n,f,n0,dn+1)
-		print  nam,len(code)
+	_forth=[]
+	for x in forth: _forth.extend(x)
+	_numbers=[]
+	for x in numbers: _numbers.extend(x)
+	_names=[]
+	for x in names: _names.extend(x)
+
+	for x,n in zip(_forth,_names): c(x,n)
 
 all()
 
-
-for (di,i),x in backref.items():
+for i,x in backref.items():
 	for y in x:
-		d=(addr[i+128*di]-y)-2
+		d=(addr[i]-y)-2
 		code[y]|=d&0xffffff
 
 for i in range(len(addr)):
-	d=i>>7
-	n=i&0x7f
-	print hex(i),_names[d][n],hex(addr[i]*4)
+	print hex(i),_names[i],hex(addr[i]*4)
 
 from struct import pack
 open('compiled.bin','w').write(''.join([pack('I',x) for x in code]))
