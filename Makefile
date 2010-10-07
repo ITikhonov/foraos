@@ -9,12 +9,12 @@ custom.bin: custom
 custom: custom.o
 	bin/ld -o custom custom.o
 
-custom.o: code.dict compiled.bin
+custom.o: core.dict compiled.bin
 
-code.dict: code.fth compile.py font.bin
-	python ./compile.py code.fth
+core.dict: core.fth compile.py font.bin
+	python ./compile.py core.fth
 
-code.fth: sample.txt
+core.fth: sample.txt
 
 install: all
 	while ! sudo mount /dev/sdb1 /mnt; do sleep 1; done
@@ -35,7 +35,7 @@ sample.txt: sample.o
 	bin/objdump -D sample.o > sample.txt
 	cat sample.txt
 
-compiled.bin: code.dict codegen.py
+compiled.bin: core.dict codegen.py
 	python codegen.py
 	$(AS) -o compiled.o empty.s
 	bin/objcopy --add-section raw=compiled.bin compiled.o
