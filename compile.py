@@ -47,17 +47,18 @@ def atom(x):
 		return 0x8000+numbers.index(n)
 
 	if x not in atoms:
-		atoms[atoms.index(None)]=x
+		return x
 	return atoms.index(x)
 
 defs={}
 
 for x in words:
+	atoms[atoms.index(None)]=x[0]
+
+for x in words:
 	d=[atom(y) for y in x[1:]]
 	defs[atom(x[0])]=d
-	if d[0]==3:
-		numbers.append(numbers[d[1]^0x8000])
-		d[1]=0x8000|(len(numbers)-1)
+
 
 def replace_None(x):
 	if x is None: return ''
@@ -101,12 +102,12 @@ for x in atoms:
 		d2=[]
 		for i in range(len(d)):
 			y=d[i]
-			if y&0x4000:
+			if type(y) is str:
+				d2.append('\xff\xff')
+				linkage.append((('CORE',y),f.tell()+i*2))
+			elif y&0x4000:
 				d2.append('\xff\xff')
 				linkage.append((extern[(y^0x4000)].split('\\'),f.tell()+i*2))
-			elif (y&0x8000)==0 and defs.get(y) is None:
-				d2.append('\xff\xff')
-				linkage.append((('CORE',atoms[y]),f.tell()+i*2))
 			else:
 				d2.append(u16(y))
 		d=d2
