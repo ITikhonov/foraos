@@ -4,31 +4,38 @@ PREDEFINED 'ATOM' 'EXIT' 'SAVE' 'RUN' 'PAGE0' 'PAGE1' 'PAGE2' 'PAGE3'
 #    Touch: packed word [x:y]
 #    Cell: [Y] [X]
 #    Screen: framebuffer address in  A
-#    Window: indirect through calling UP*
+#    Area: indirect through calling UP*
 
 # * Conversions:
 #    Touch -> Cell (once in up)
 #    Cell -> Screen (CELL)
 #    Touch -> Screen (SETCELL, once in hover)
-#    Cell -> Window (once in UP)
+#    Cell -> Area (once in UP)
 
 
 # Name: [address into dictionary]
-# Atom: packed 16-bit [dictionary no:atom no]
+# Atom: packed 16-bit [dictionary no 1-based:atom no]
 #	with	0x00 dictionary is a same definition belongs to
 #		0x80 dictionary is a number indicator
 
 # Edited: [address of code block]
 # Cursor: [i] index of 16-bit atom in code block, with 0xffffffff being no cursor
 # Code: [address in dictionary]
+# Dict: [i] dict no 0-based
 
 # * Conversions:
 #    Atom -> Name (once in DRAWCODE)
 #    Atom -> Number (once in DRAWCODE)
+#    Cell -> Dict (once in UPRIGHT)
 #    Cell -> Atom (once in CODEADD)
 #    Cell -> Edited (once in NAMECHNG)
 #    Cell -> Cursor (once in CODESEL)
 #    (Edited,Cursor) -> Code (once in CODEADD)
+
+# Area behaviour:
+#    Touching NAMES yields atom to be inserted into code or selected as edited
+#    Touching CODE sets position where atoms will be inserted
+#    Touching DICT will change atoms shown in NAMES
 
 INIT FB >A DRAWALL
 UP DUP CELLX >A CELLY A> UPNAMES UPRIGHT UPCODE UPESC DROP DROP CLEAR
