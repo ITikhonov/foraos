@@ -1,8 +1,40 @@
 PREDEFINED 'ATOM' 'EXIT' 'SAVE' 'RUN' 'PAGE0' 'PAGE1' 'PAGE2' 'PAGE3'
 
+# * Coordinates:
+#    Touch: packed word [x:y]
+#    Cell: [Y] [X]
+#    Screen: framebuffer address in  A
+#    Window: indirect through calling UP*
+
+# * Conversions:
+#    Touch -> Cell (once in up)
+#    Cell -> Screen (CELL)
+#    Touch -> Screen (SETCELL, once in hover)
+#    Cell -> Window (once in UP)
+
+
+# Name: [address into dictionary]
+# Atom: packed 16-bit [dictionary no:atom no]
+#	with	0x00 dictionary is a same definition belongs to
+#		0x80 dictionary is a number indicator
+
+# Edited: [address of code block]
+# Cursor: [i] index of 16-bit atom in code block, with 0xffffffff being no cursor
+# Code: [address in dictionary]
+
+# * Conversions:
+#    Atom -> Name (once in DRAWCODE)
+#    Atom -> Number (once in DRAWCODE)
+#    Cell -> Atom (once in CODEADD)
+#    Cell -> Edited (once in NAMECHNG)
+#    Cell -> Cursor (once in CODESEL)
+#    (Edited,Cursor) -> Code (once in CODEADD)
+
 INIT FB >A DRAWALL
 UP DUP CELLX >A CELLY A> UPNAMES UPRIGHT UPCODE UPESC DROP DROP CLEAR
 DOWN HOVER
+
+# up handling words takes cell in two words on stack Y X
 
 UPNAMES OVER f CMP HI? ; DUP 7 CMP HI? ; NAMESEL
 UPRIGHT DUP 9 CMP NE? ; RIGHTRUN

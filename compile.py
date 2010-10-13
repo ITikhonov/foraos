@@ -18,6 +18,7 @@ from sys import argv
 
 words=[x.split() for x in open(argv[1]).read().split('\n')]
 words=[x for x in words if x!=[]]
+words=[x for x in words if not x[0].startswith('#')]
 
 predef=[]
 while words[0][0]=='PREDEFINED':
