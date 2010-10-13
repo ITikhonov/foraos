@@ -1,38 +1,81 @@
 PREDEFINED 'ATOM' 'EXIT' 'SAVE' 'RUN' 'PAGE0' 'PAGE1' 'PAGE2' 'PAGE3'
 
+# * Coordinates:
+#    Touch: packed word [x:y]
+#    Cell: [Y] [X]
+#    Screen: framebuffer address in  A
+#    Area: indirect through calling UP*
+
+# * Conversions:
+#    Touch -> Cell (once in up)
+#    Cell -> Screen (CELL)
+#    Touch -> Screen (SETCELL, once in hover)
+#    Cell -> Area (once in UP)
+
+
+# Name: [address into dictionary]
+# Atom: packed 16-bit [dictionary no 1-based:atom no]
+#	with	0x00 dictionary is a same definition belongs to
+#		0x80 dictionary is a number indicator
+
+# Edited: [address of code block]
+# Cursor: [i] index of 16-bit atom in code block, with 0xffffffff being no cursor
+# Code: [address in dictionary]
+# Dict: [i] dict no 0-based
+
+# * Conversions:
+#    Atom -> Name (once in DRAWCODE)
+#    Atom -> Number (once in DRAWCODE)
+#    Cell -> Dict (once in UPRIGHT)
+#    Cell -> Atom (once in CODEADD)
+#    Cell -> Edited (once in NAMECHNG)
+#    Cell -> Cursor (once in CODESEL)
+#    (Edited,Cursor) -> Code (once in CODEADD)
+
+# Area behaviour:
+#    Touching NAMES yields atom to be inserted into code or selected as edited
+#    Touching CODE sets position where atoms will be inserted
+#    Touching DICT will change atoms shown in NAMES
+
 INIT FB >A DRAWALL
-UP DUP CELLX >A CELLY A> UPNAMES UPRIGHT UPCODE UPESC DROP DROP CLEAR
+UP TCH2CELL UPRUN CLEAR
 DOWN HOVER
 
-UPNAMES OVER f CMP HI? ; DUP 7 CMP HI? ; NAMESEL
-UPRIGHT DUP 9 CMP NE? ; RIGHTRUN
-RIGHTRUN OVER CURDICT ! DRAWNAMS
-UPCODE OVER 11 CMP LS? ; OVER OVER CODESEL
-UPESC DUP 8 CMP NE? ; ESCAPE
+UPRUN UPNAMES UPDICT UPCODE ESCAPE
 
-ESCAPE CODECLR ffffffff CODEPOS !
+TCH2CELL DUP CELLX >A CELLY A>
+CELLATOM SWAP 3 LSL + CURDICT @ 1 + 8 LSL OR
+ATOMCODE DUP ff AND 5 LSL SWAP ATOMDICT 3600 * + CODE +
+ATOMDICT 8 LSR 1 -
+ATOMNAME DUP ff AND 3 LSL SWAP ATOMDICT 3600 * + NAMES +
 
-NAMESEL CODEPOS @ ffffffff CMP EQ? : NAMECHNG CODEADD
+# up handling words takes cell in two words on stack Y X
 
-NAMECHNG OVER 3 LSL OVER + 5 LSL CCODE + DUP CODEBASE ! DRAWCODE
+UPNAMES OVER f CMP HI? ; DUP 7 CMP HI? ; NAMESEL ^
+UPDICT DUP 9 CMP NE? ; DICTSEL ^
+UPCODE OVER 11 CMP LS? ; OVER OVER CODESEL ^
 
-CODESEL CODECLR CODESET CODEHGLT
+DICTSEL DROP CURDICT ! DRAWNAMS
 
-CODECLR ffffffff CODEPOS @ CMP EQ? ; 12 D> CELL HIGHLGHT
-CODESET DUP CODEPOS !
-CODEHGLT 12 CODEPOS @ CELL HIGHLGHT
+ESCAPE DROP DROP CRSRSWAP 0 CURSOR ! 0 CURSORA !
 
-CODEADD OVER OVER XYNAME DUP CODESAVE CODERDRW CODENEXT
+NAMESEL CELLATOM CURSOR @ 0 CMP EQ? : NAMECHNG CODEADD
 
+NAMECHNG DUP CURATOM ! ATOMCODE DRAWCODE
+CODEADD DUP CURSORA @ W!+ A> CURSORA ! CURSOR @ >A DRAWATOM A> HIGHLGHT CURSOR !
 
-CODESAVE CODEBASE @ CODEPOS @ 1 LSL + W!
-CODENEXT HIGHLGHT CODEPOS @ 1 + CODEPOS !
-CODERDRW 12 CODEPOS @ CELL 3 LSL CNAMES + DRAWNAME
+DRAWATOM ATOMNAME DRAWNAME
 
-XYNAME SWAP 3 LSL +
+CODESEL CRSRSWAP OVER OVER SETCRSR SETCRSRA CRSRSWAP
 
-CODEBASE VAR 0
-CODEPOS VAR ffffffff
+SETCRSR CELL A> CURSOR !
+SETCRSRA >A 12 - 3 LSL A+ A> 1 LSL CURATOM @ ATOMCODE + CURSORA !
+
+CRSRSWAP 0 CURSOR @ CMP EQ? ; D> >A HIGHLGHT
+
+CURSOR VAR 0
+CURSORA VAR 0
+CURATOM VAR 0
 
 DUMP FB >A RASTNUM
 
@@ -117,3 +160,4 @@ CURRENT DROP CURDICT @ 3600 *
 OTHER 8 LSR 1 - 3600 *
 CURDICT VAR 0
 
+DRAWNUM RASTNUM DSPACE
