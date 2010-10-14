@@ -164,6 +164,9 @@ all()
 for i,x in backref.items():
 	for y in x:
 		d=(addr[i]-y)-2
+		if (code[y]&0x0f000000)==0x0b000000 and code[y+1]==POPPC:
+			code[y]=(code[y]&0xf0000000)|0x0a000000
+			d+=1
 		code[y]|=d&0xffffff
 
 for i in range(len(addr)):
