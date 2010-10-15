@@ -57,6 +57,7 @@ for x in words:
 	atoms[atoms.index(None)]=x[0]
 
 for x in words:
+	assert atom(x[0]) not in defs,('Duplicate definition of '+x[0])
 	d=[atom(y) for y in x[1:]]
 	defs[atom(x[0])]=d
 
